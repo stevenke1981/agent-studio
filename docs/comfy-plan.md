@@ -155,3 +155,55 @@ SG.runs.diff(entryA, entryB) -> [{id, title, change:"added"|"removed"|"changed"|
 // Run panel lists pending approvals with 核准/拒絕 + note input; also bridges canvas onApprove -> ex.approve.
 ```
 Tests: engine.test covers approve / reject / cancel-while-waiting / auto; nodes.test covers runs.record + runs.diff.
+
+## Amendment 2 — control flow: branch / retry / loop (now in scope)
+Design rule: the graph stays a DAG (cycle rejection unchanged). Control flow is expressed by special core nodes + a per-node retry policy, interpreted by the executor.
+```js
+// ---- A (engine) ----
+// Types: define "BOOLEAN" (if not already) and "LOOP" (loop handle, color distinct).
+// core/condition: input "value" "*" -> output "result" BOOLEAN.
+//   widgets: mode select ["nonempty"(非空),"contains"(包含文字),"equals"(等於),"regex"(符合規則),"truthy"(為真)],
+//            pattern text (convertible), negate toggle. NO eval(); regex built with try/catch -> node-error on invalid.
+//   Text tested = value.text ?? String(value).
+// core/branch: inputs "value" "*", "condition" BOOLEAN (optional; if unlinked, uses own condition widgets
+//   identical to core/condition). outputs "true","false" (effective type = upstream type).
+//   The non-taken output carries an INACTIVE marker; any node whose required input comes from an INACTIVE
+//   value is skipped with reason "branch" (not an error; propagates downstream; run status stays "ok").
+// core/merge: inputs "a","b","c" "*" (all optional) -> output "value": first ACTIVE input; all inactive -> INACTIVE.
+// core/loop-start: inputs "init" "*"; widgets max (number 1..20, default 3).
+//   outputs "value" (effective type = init type), "index" NUMBER, "loop" LOOP.
+// core/loop-end: inputs "loop" LOOP (required), "value" "*", "done" BOOLEAN (optional);
+//   widgets: same condition widgets as core/condition (used when "done" unlinked; default mode "truthy" on done/none);
+//   outputs "result" (last value), "count" NUMBER.
+//   Loop body = nodes reachable from loop-start AND reaching loop-end. Executor runs the body once per
+//   iteration; iteration i>0 feeds loop-end's "value" back as loop-start's "value". Stops when done is true
+//   or max reached (max reached without done -> warn in result text 「已達上限 N 輪」, not error).
+//   Properly nested loops allowed (depth ≤ 3); crossing regions / body node outside but feeding inside
+//   from a later node -> validate() error 「迴圈區段交錯」. Body nodes are not cached across iterations;
+//   loop-end output IS cached keyed by upstream keys + max + widgets.
+//   ctx.iteration = {index, max} (innermost) for body nodes, null otherwise.
+// Retry policy: node JSON field retry:{max:0..5, delay:ms} (default {max:0,delay:0}); g.setRetry(id,{max,delay}).
+//   On thrown error, executor re-runs up to max times (wait delay via opts.delay), ctx.attempt = 0-based.
+//   Abort / approval rejection are never retried. Event "node-retry" {id, attempt, max, message}.
+// New events: "loop-iteration" {id:<loop-end id>, startId, index, max}; node-skip reason adds "branch".
+// RunResult.results[i] adds attempts (number) and, for loop-end, iterations.
+// ---- B (canvas) ----
+// setNodeState state may carry: iteration:{index,max} -> badge 「第 i/N 輪」; attempt:{n,max} -> badge 「重試 n/N」;
+//   status "skipped" with message "branch" -> dimmed + dashed border (inactive path); wires from an inactive
+//   output drawn dashed when c.setLinkState(linkId,{inactive:true}) is called (new: c.setLinkState, c.clearStates clears it).
+// LOOP-typed wires drawn thicker + dashed; loop body region (nodes between a paired start/end) gets a subtle
+//   bracket/background frame (compute body same as engine rule; NICE). Node with retry.max>0 shows ↻N badge.
+// Context menu adds 「重試設定…」 -> opts.onOpenNode(id) (inspector owns editing).
+// ---- C (app) ----
+// Inspector: retry max/delay editor (g.setRetry). Bridge node-retry/loop-iteration/branch skips to canvas
+//   (setNodeState badges, setLinkState inactive). Run panel shows attempts and iterations.
+// Domain: deterministic flaky demo — code/<lang>-test accepts widget "flaky" (number 0..3, default 0): fails
+//   the first `flaky` attempts with 「測試暫時失敗（模擬）」 using ctx.attempt. New domain node code/fix「修正程式」
+//   (REPORT -> PROJECT_<LANG> per lang or a generic project type) so loops make sense.
+// Presets (library + options select): 「條件分支」(query -> condition contains "Rust" -> branch -> rust path / research
+//   path -> merge -> preview), 「修正直到通過」(loop-start -> build -> test(flaky) -> loop-end done when report
+//   contains "通過", max 3), 「重試示範」(test with flaky=2, retry max 3).
+```
+Tests: engine.test covers branch skip propagation + merge, condition modes incl. invalid regex, loop runs until done and stops at max,
+nested loop, crossing-region validate error, retry success-after-N and exhaustion, abort not retried.
+nodes.test covers the three presets end to end (deterministic, two runs byte-identical).
