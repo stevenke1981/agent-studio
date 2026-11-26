@@ -1,0 +1,49 @@
+/* 小海 Agent 工作室 — styles for the new flow-editor UI only (sga- prefix). */
+.sga-host{position:relative;isolation:isolate;overflow:hidden;height:max(440px,calc(100dvh - 201px));background:#191d23;outline:none}
+.sga-host.sga-drop{box-shadow:inset 0 0 0 2px #8cb7ea}
+.sga-fallback{position:absolute;top:24px;left:24px;margin:0;color:#c5ced8}
+@media(max-width:600px){.sga-host{height:max(360px,calc(100dvh - 221px))}}
+
+.drawer.sga-wide{width:min(340px,calc(100% - 14px))}
+.sga-mini{min-height:30px;padding:3px 8px;font-size:.8rem;margin-top:4px}
+.sga-note{margin:6px 0 10px}
+.sga-widget{margin-top:4px}
+.sga-widget textarea{width:100%;margin:5px 0 4px;min-height:64px;padding:5px 7px;border:1px solid #b5bab9;border-radius:5px;background:#fff;font:inherit;color:inherit;resize:vertical}
+.sga-widget label:has(input[type=checkbox]){display:flex;align-items:center;gap:6px}
+.sga-widget input[type=checkbox]{width:auto;margin:0;accent-color:var(--blue)}
+.sga-widget input:disabled,.sga-widget select:disabled,.sga-widget textarea:disabled{background:#eeeee9;color:var(--muted)}
+.sga-retry{margin:10px 0;padding:6px 10px;border:1px solid var(--line);border-radius:5px}
+.sga-retry legend{font-size:.84rem;font-weight:700;padding:0 4px}
+
+.sga-issue{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:4px 0;font-size:.83rem}
+.sga-issue button{min-height:28px;padding:2px 8px;font-size:.78rem;flex:none}
+.sga-error{color:#8a2f1f}.sga-warn{color:#7a5a12}
+.sga-approval{border:1px solid #d9a441;border-radius:5px;padding:8px;margin:6px 0;background:#fff8e8}
+.sga-approval .actions{margin-top:4px}
+.sga-details{white-space:pre-wrap;overflow-wrap:anywhere;max-height:140px;overflow:auto;background:#eeeee9;padding:6px;font-size:.78rem;margin:4px 0}
+.sga-estimate div{margin:2px 0}
+.sga-writes{color:#8a2f1f;font-weight:700}
+.sga-result.sga-error strong{color:#8a2f1f}
+.sga-result.sga-cached strong{color:#4b6b3c}
+.sga-result.sga-skipped strong{color:var(--muted)}
+
+.sga-run{border-top:1px solid var(--line);padding:7px 0}
+.sga-run.sga-picked{background:#eef3f8}
+.sga-run-pick{display:flex!important;align-items:center;gap:6px;margin:0!important;font-weight:700}
+.sga-run-pick input{width:auto!important;margin:0!important;accent-color:var(--blue)}
+.sga-run .actions{gap:5px;margin-top:3px}
+.sga-diff{width:100%;border-collapse:collapse;font-size:.78rem;margin-top:6px}
+.sga-diff th,.sga-diff td{border-bottom:1px solid var(--line);padding:4px 3px;text-align:left;vertical-align:top;overflow-wrap:anywhere}
+.sga-diff td small{display:block;color:var(--muted)}
+.sga-diff-changed{background:#fff3d6}
+.sga-diff-added{background:#e3f3e1}
+.sga-diff-removed{background:#f8e1dc;text-decoration:line-through;text-decoration-color:#b0705f}
+.sga-diff-same td{color:var(--muted)}
+
+.sga-dialog{max-width:min(480px,calc(100vw - 32px));border:1px solid #a3aab1;border-radius:7px;padding:16px 18px;background:#fbfaf7;color:var(--text);box-shadow:0 10px 40px #0006}
+.sga-dialog::backdrop{background:#0006}
+.sga-dialog h2{margin-bottom:8px}
+.sga-dialog form{margin-top:12px;text-align:right}
+.sga-keys{width:100%;border-collapse:collapse;font-size:.86rem}
+.sga-keys th,.sga-keys td{text-align:left;padding:4px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+.sga-keys th{white-space:nowrap;font:600 .8rem ui-monospace,Consolas,monospace;color:var(--blue)}

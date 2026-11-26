@@ -4,11 +4,11 @@
 *{box-sizing:border-box}body{margin:0;color:var(--text);background:var(--paper)}[hidden]{display:none!important}button,select,input{font:inherit;color:inherit}button,select{min-height:37px;background:var(--white);border:1px solid #c5cac7;border-radius:5px;padding:5px 10px}button{cursor:pointer}button:hover:not(:disabled){background:#e9eef2}button:disabled{opacity:.5;cursor:default}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,[tabindex="0"]:focus-visible{outline:2px solid #4284ca;outline-offset:2px}a{color:var(--blue)}p,h1,h2,h3{margin:0}h2{font-size:1rem}h3{font-size:.96rem}.top{min-height:59px;padding:9px clamp(13px,3.8vw,55px);display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:1px solid var(--line);background:#fbfaf7}.brand{display:flex;align-items:center;gap:10px}.mark{width:29px;height:29px;background:#2e373c;color:#fff;border-radius:5px;display:grid;place-items:center}.mark svg{width:19px;height:19px}.edition,.caption,.crumb,.home-foot,.sub,.helper,.event{font-size:.86rem;color:var(--muted)}.edition span,.crumb span{padding:0 5px;color:#767a76}
 .home{max-width:1040px;margin:clamp(29px,7vw,83px) auto 0;padding:0 clamp(15px,5vw,54px) 32px}.home h1{font-size:clamp(2.7rem,6vw,4rem);letter-spacing:-.063em;line-height:1.15;margin:12px 0 8px}.lead{color:var(--muted);margin-bottom:32px}.list-head,.agent-row{display:grid;grid-template-columns:minmax(0,1fr) 100px minmax(81px,auto);gap:16px;align-items:center}.list-head{padding:8px 15px;color:var(--muted);border-bottom:1px solid #a4aaa7;font-size:.8rem}.agent-row{min-height:77px;padding:12px 15px;background:#fbfaf7;border-bottom:1px solid var(--line)}.agent-row:hover{background:#fff}.agent-info{display:flex;align-items:center;gap:11px;min-width:0}.agent-icon{width:34px;height:34px;display:grid;place-items:center;border:1px solid #ccd2d2;border-radius:5px;background:#edf0ee;color:#344e60;flex:none;font:700 .81rem ui-monospace,monospace}.agent-info small{display:block;color:var(--muted);font-size:.82rem}.agent-state{font-size:.83rem;white-space:nowrap;color:#455850}.agent-state::before{content:"";display:inline-block;width:6px;height:6px;background:#608376;border-radius:50%;margin-right:6px;vertical-align:2px}.configure{justify-self:end;color:var(--blue);white-space:nowrap}.home-foot{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:19px}
 .editor{padding:12px clamp(8px,2vw,28px) 10px}.worktop,.location,.actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap}.worktop{justify-content:space-between;margin-bottom:11px}.location{gap:13px}.divider{height:27px;border-left:1px solid var(--line)}.caption{display:block;font-size:.74rem}.worktop h1{font-size:1.15rem;line-height:1.2}.primary{background:var(--blue);border-color:var(--blue);color:white}.primary:hover:not(:disabled){background:#36587e}.actions button[aria-expanded=true]{background:#dfe9f3;border-color:#6e87a5}
-.canvas{position:relative;border:1px solid #3d4651;border-radius:7px;overflow:hidden;background:#191d23;color:#e8edf4}.helper{background:#252b33;color:#c6cfd9;border-bottom:1px solid #3e4752;padding:7px 12px;display:flex;justify-content:space-between;gap:10px}.viewport{overflow:auto;height:max(440px,calc(100dvh - 201px));position:relative;overscroll-behavior:contain;scrollbar-color:#526171 #20252c}.board{height:640px;width:1040px;min-height:100%;min-width:100%;position:relative;background:radial-gradient(circle,#495462 1px,transparent 1px) 0 0 / 20px 20px}.board.hot{box-shadow:inset 0 0 0 2px #8cb7ea}#wires,#nodes{position:absolute;inset:0}#wires{width:100%;height:100%;pointer-events:none}#wires path{fill:none;stroke:#8cb7ea;stroke-width:2.4}.node{width:168px;position:absolute;border:1px solid #667788;background:#262d36;border-radius:5px;box-shadow:0 4px 12px #0006;color:#f0f3f7}.node.selected{border-color:#a4ccf5;box-shadow:0 0 0 2px #80b2ea55}.node .drag{width:100%;border:0;border-bottom:1px solid #586779;border-radius:4px 4px 0 0;text-align:left;cursor:grab;min-height:34px;background:#374452;touch-action:none;padding:5px 7px;font-weight:700}.node .drag:hover{background:#435a70}.node .drag:active{cursor:grabbing}.node small{display:block;padding:4px 7px;color:#c5ced8;font-size:.75rem}.ports{display:flex;justify-content:space-between;align-items:center;gap:2px;padding:4px 4px 6px}.ports button{min-height:28px;padding:2px 3px;font-size:.72rem;color:#c7e1ff;background:#263b50;border-color:#677c95;touch-action:none}.ports button:hover{background:#3f5f7a}.ports button[aria-pressed=true]{background:#b3d5f9;color:#172334}
-.drawer{position:absolute;z-index:3;top:38px;bottom:7px;left:7px;width:min(265px,calc(100% - 14px));padding:12px;background:#fbfaf7;color:var(--text);border:1px solid #a3aab1;border-radius:6px;box-shadow:0 6px 26px #0007;overflow:auto;overscroll-behavior:contain}.drawer.right{left:auto;right:7px}.drawer-head{display:flex;justify-content:space-between;align-items:start;gap:7px;padding-bottom:8px;border-bottom:1px solid var(--line);margin-bottom:8px}.drawer-head p{font-size:.81rem;color:var(--muted)}.drawer-head button{min-height:32px;line-height:1;font-size:1.15rem}.part{display:block;text-align:left;width:100%;margin:5px 0}.part small{display:block;color:var(--muted);font-size:.74rem}.group{margin:10px 0 0;font-size:.78rem;font-weight:750;color:var(--blue)}.drawer label{display:block;font-size:.84rem;margin-top:8px}.drawer input,.drawer select{width:100%;margin:5px 0 8px}.drawer input{min-height:36px;background:white;border:1px solid #b5bab9;border-radius:5px;padding:5px 7px}.event{display:flex;gap:8px;padding:7px 0 0;overflow-wrap:anywhere}.event strong{flex:none}.result{padding:7px 0;border-bottom:1px solid var(--line);font-size:.84rem;overflow-wrap:anywhere}.result strong{display:block;color:var(--blue)}.moves{display:flex;gap:4px;flex-wrap:wrap;margin:6px 0}.edge{display:flex;gap:7px;align-items:center;justify-content:space-between;border-top:1px solid var(--line);padding:5px 0;font-size:.82rem}.edge button{white-space:nowrap;min-height:30px}.danger{color:#7c3527}#empty{position:absolute;top:65px;left:25px;color:#c5ced8}
-@media(max-width:600px){.home{margin-top:29px}.lead{margin-bottom:21px}.list-head,.agent-row{gap:7px;padding-inline:7px;grid-template-columns:minmax(0,1fr) 62px 70px}.agent-icon{width:26px;height:29px;font-size:.68rem}.agent-info{gap:6px}.agent-info small{font-size:.73rem}.agent-state{font-size:.73rem}.agent-state::before{display:none}.configure{padding:4px 6px;font-size:.78rem}.actions{gap:5px}.actions button{font-size:.86rem;padding-inline:7px}.helper{padding-inline:7px;font-size:.73rem}.viewport{height:max(360px,calc(100dvh - 221px))}.drawer{top:35px;width:min(247px,calc(100% - 14px))}.event{font-size:.78rem}}
+.canvas{position:relative;border:1px solid #3d4651;border-radius:7px;overflow:hidden;background:#191d23;color:#e8edf4}.helper{background:#252b33;color:#c6cfd9;border-bottom:1px solid #3e4752;padding:7px 12px;display:flex;justify-content:space-between;gap:10px}
+.drawer{position:absolute;z-index:3;top:38px;bottom:7px;left:7px;width:min(265px,calc(100% - 14px));padding:12px;background:#fbfaf7;color:var(--text);border:1px solid #a3aab1;border-radius:6px;box-shadow:0 6px 26px #0007;overflow:auto;overscroll-behavior:contain}.drawer.right{left:auto;right:7px}.drawer-head{display:flex;justify-content:space-between;align-items:start;gap:7px;padding-bottom:8px;border-bottom:1px solid var(--line);margin-bottom:8px}.drawer-head p{font-size:.81rem;color:var(--muted)}.drawer-head button{min-height:32px;line-height:1;font-size:1.15rem}.part{display:block;text-align:left;width:100%;margin:5px 0}.part small{display:block;color:var(--muted);font-size:.74rem}.group{margin:10px 0 0;font-size:.78rem;font-weight:750;color:var(--blue)}.drawer label{display:block;font-size:.84rem;margin-top:8px}.drawer input,.drawer select{width:100%;margin:5px 0 8px}.drawer input{min-height:36px;background:white;border:1px solid #b5bab9;border-radius:5px;padding:5px 7px}.event{display:flex;gap:8px;padding:7px 0 0;overflow-wrap:anywhere}.event strong{flex:none}.result{padding:7px 0;border-bottom:1px solid var(--line);font-size:.84rem;overflow-wrap:anywhere}.result strong{display:block;color:var(--blue)}.moves{display:flex;gap:4px;flex-wrap:wrap;margin:6px 0}.edge{display:flex;gap:7px;align-items:center;justify-content:space-between;border-top:1px solid var(--line);padding:5px 0;font-size:.82rem}.edge button{white-space:nowrap;min-height:30px}.danger{color:#7c3527}
+@media(max-width:600px){.home{margin-top:29px}.lead{margin-bottom:21px}.list-head,.agent-row{gap:7px;padding-inline:7px;grid-template-columns:minmax(0,1fr) 62px 70px}.agent-icon{width:26px;height:29px;font-size:.68rem}.agent-info{gap:6px}.agent-info small{font-size:.73rem}.agent-state{font-size:.73rem}.agent-state::before{display:none}.configure{padding:4px 6px;font-size:.78rem}.actions{gap:5px}.actions button{font-size:.86rem;padding-inline:7px}.helper{padding-inline:7px;font-size:.73rem}.drawer{top:35px;width:min(247px,calc(100% - 14px))}.event{font-size:.78rem}}
 .library.drop-through{pointer-events:none;opacity:.35}
-.home-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.home-heading button{white-space:nowrap}.home #home-notice:not(:empty){margin:8px 0;color:var(--blue)}.profile{max-width:840px;margin-top:28px}.profile h1{font-size:clamp(2rem,5vw,3rem);letter-spacing:-.035em}.profile .lead{margin-bottom:20px}.profile label[for]{display:block;margin:12px 0 4px;font-weight:700}.profile input:not([type=checkbox]),.profile textarea{width:100%;padding:8px 10px;min-height:38px;border:1px solid #b5bab9;border-radius:5px;background:white;font:inherit;color:inherit}.profile textarea{resize:vertical}.profile fieldset{margin:16px 0;padding:10px 13px;border:1px solid #c6cac4;border-radius:5px;background:#fbfaf7}.profile legend{font-weight:700;padding:0 5px}#capabilities{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px 12px;margin-top:9px}#capabilities label{display:flex;align-items:baseline;gap:5px;font-size:.86rem}#capabilities input{accent-color:var(--blue);margin:0}#profile-notice{margin-top:9px;color:var(--blue)}#reuse-agents{border-bottom:1px solid var(--line);padding-bottom:8px}.reuse-form{display:flex;align-items:center;gap:5px}.reuse-form select{min-width:0;flex:1}.reuse-form button{white-space:nowrap}#reuse-agents:empty{display:none}.node .source{padding-top:0;color:#adcef1}@media(max-width:600px){.home-heading{align-items:start;gap:5px}.home-heading .actions{padding-block:5px}#capabilities{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.home-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.home-heading button{white-space:nowrap}.home #home-notice:not(:empty){margin:8px 0;color:var(--blue)}.profile{max-width:840px;margin-top:28px}.profile h1{font-size:clamp(2rem,5vw,3rem);letter-spacing:-.035em}.profile .lead{margin-bottom:20px}.profile label[for]{display:block;margin:12px 0 4px;font-weight:700}.profile input:not([type=checkbox]),.profile textarea{width:100%;padding:8px 10px;min-height:38px;border:1px solid #b5bab9;border-radius:5px;background:white;font:inherit;color:inherit}.profile textarea{resize:vertical}.profile fieldset{margin:16px 0;padding:10px 13px;border:1px solid #c6cac4;border-radius:5px;background:#fbfaf7}.profile legend{font-weight:700;padding:0 5px}#capabilities{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px 12px;margin-top:9px}#capabilities label{display:flex;align-items:baseline;gap:5px;font-size:.86rem}#capabilities input{accent-color:var(--blue);margin:0}#profile-notice{margin-top:9px;color:var(--blue)}#reuse-agents{border-bottom:1px solid var(--line);padding-bottom:8px}.reuse-form{display:flex;align-items:center;gap:5px}.reuse-form select{min-width:0;flex:1}.reuse-form button{white-space:nowrap}#reuse-agents:empty{display:none}@media(max-width:600px){.home-heading{align-items:start;gap:5px}.home-heading .actions{padding-block:5px}#capabilities{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .sections{display:flex;gap:4px}.sections button{background:transparent;border-color:transparent;color:var(--muted)}.sections button.active{border-color:var(--line);color:var(--blue);background:#eeeee9;font-weight:700}.skill-source{font-family:ui-monospace,Consolas,monospace!important}#skill-choices label{display:flex;align-items:baseline;gap:6px;margin-top:7px;font-size:.86rem;overflow-wrap:anywhere}#skill-choices input{margin:0;accent-color:var(--blue);flex:none}#skills-notice:not(:empty),#skill-notice:not(:empty){margin:8px 0;color:var(--blue)}#skill-list .agent-row:first-child{border-top:1px solid var(--line)}#skill-list .agent-row{grid-template-columns:minmax(0,1fr) 2.5rem auto}.skill-missing{color:#773c23}@media(max-width:600px){.top{flex-wrap:wrap}.sections{order:3;width:100%}.sections button{min-height:32px}}
 .skill-detail{font-size:.82rem;color:var(--blue);margin-left:18px}.skill-detail summary{cursor:pointer}.skill-detail pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#eeeee9;padding:8px;color:var(--text);max-height:200px;overflow:auto}
 #tool-list .agent-row:first-child{border-top:1px solid var(--line)}.checks{display:flex;flex-wrap:wrap;gap:8px 14px}.checks label{display:flex;align-items:baseline;gap:5px;font-size:.87rem}.checks input{accent-color:var(--blue);margin:0}.tool-grant{border-top:1px solid var(--line);padding:8px 0}.tool-grant:first-child{margin-top:5px}.tool-grant .checks{margin-top:5px}.tool-grant .sub{display:block;overflow-wrap:anywhere}.tool-grant label:has(input:disabled){opacity:.58}.tool-pick{display:flex;gap:5px;align-items:baseline;font-weight:700}.tool-pick input{margin:0;accent-color:var(--blue)}#tool-notice{margin-top:9px;color:var(--blue)}#tool-list .agent-row{grid-template-columns:minmax(0,1fr) 2.5rem auto}
@@ -52,7 +52,10 @@
 #assembly-scale{min-width:42px;text-align:center;color:var(--muted);font:.82rem ui-monospace,monospace}
 @media(max-width:600px){#assembly-viewport{height:max(358px,calc(100dvh - 254px))}.assembly-footer{font-size:.77rem}}
 
-</style></head>
+</style>
+<link rel="stylesheet" href="comfy/canvas.css">
+<link rel="stylesheet" href="comfy/app.css">
+</head>
 <body>
 <header class="top"><div class="brand"><span class="mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M7 6h10M6 17l6-9 6 9M7 18h10" stroke="currentColor" stroke-width="1.5"/><circle cx="5.5" cy="6" r="2" fill="currentColor"/><circle cx="18.5" cy="6" r="2" fill="currentColor"/><circle cx="5.5" cy="18" r="2" fill="currentColor"/><circle cx="18.5" cy="18" r="2" fill="currentColor"/></svg></span><strong>小海 Agent 工作室</strong></div><nav class="sections" aria-label="工作室導覽"><button id="nav-agents" class="active" type="button" aria-current="page">Agents</button><button id="nav-skills" type="button">Skills</button><button id="nav-tools" type="button">Tools</button></nav><span class="edition">離線原型 <span>·</span> 0.5</span></header>
 <main id="home" class="home">
@@ -170,18 +173,50 @@
 <div class="worktop"><div class="location"><button id="back" type="button">← Agent 設定</button><span class="divider"></span><div><span class="caption">流程設定</span><h1 id="editor-title"></h1></div></div><div class="actions" aria-label="畫布工具">
 <button id="library-toggle" type="button" aria-expanded="false" aria-controls="library">＋ 功能庫</button>
 <button id="props-toggle" type="button" aria-expanded="false" aria-controls="inspector" disabled>節點設定</button>
+<button id="history-toggle" type="button" aria-expanded="false" aria-controls="history">執行紀錄</button>
 <button id="options-toggle" type="button" aria-expanded="false" aria-controls="options">更多</button>
-<button id="run" type="button" aria-controls="run-panel" aria-expanded="false" class="primary">▷ 預覽執行</button></div></div>
+<button id="shortcuts" type="button" aria-haspopup="dialog" aria-controls="shortcut-help">快捷鍵</button>
+<button id="estimate" type="button" aria-controls="run-panel" title="不執行，只估算 tokens、時間與是否寫入">試算</button>
+<button id="cancel-run" type="button" disabled aria-label="取消執行">■ 取消</button>
+<button id="run" type="button" aria-controls="run-panel" aria-expanded="false" class="primary">▷ 執行</button></div></div>
 <section class="canvas" aria-label="接線區">
-<div class="helper"><span>拖移節點 · 輸出接輸入</span><span>也可依序點兩個接點</span></div>
-<div id="viewport" class="viewport" tabindex="0" aria-label="可捲動流程畫布"><div id="board" class="board"><svg id="wires" aria-hidden="true"></svg><div id="nodes"></div><div id="empty" hidden>從「功能庫」加入節點。</div></div></div>
-<aside id="library" class="drawer library" hidden aria-labelledby="library-title"><div class="drawer-head"><div><h2 id="library-title">功能庫</h2><p>加入單一能力，或重用已儲存的 Agent。</p></div><button type="button" data-close="library-toggle" aria-label="關閉功能庫">×</button></div><div id="reuse-agents"></div><div id="palette"></div></aside>
+<div class="helper"><span>雙擊空白處搜尋節點 · 從輸出拖線到輸入</span><span>也可依序點兩個接點 · Ctrl+Enter 執行</span></div>
+<div id="flow-host" class="sga-host" aria-label="流程畫布"><p class="sga-fallback">流程引擎載入中…</p></div>
+<aside id="library" class="drawer library" hidden aria-labelledby="library-title"><div class="drawer-head"><div><h2 id="library-title">功能庫</h2><p>點一下加入、拖到畫布，或重用已儲存的 Agent。</p></div><button type="button" data-close="library-toggle" aria-label="關閉功能庫">×</button></div><div id="reuse-agents"></div><label for="palette-filter">搜尋節點</label><input id="palette-filter" type="search" autocomplete="off" placeholder="例：查詢、Rust、核准"><div id="palette"></div></aside>
 <aside id="inspector" class="drawer right" hidden aria-labelledby="inspector-title"><div class="drawer-head"><h2 id="inspector-title">節點設定</h2><button type="button" data-close="props-toggle" aria-label="關閉節點設定">×</button></div><section id="props"></section></aside>
-<aside id="options" class="drawer right" hidden aria-labelledby="options-title"><div class="drawer-head"><h2 id="options-title">畫布工具</h2><button type="button" data-close="options-toggle" aria-label="關閉畫布工具">×</button></div><label for="preset">流程範例</label><select id="preset"><option value="rust">搜尋 → Rust</option><option value="research">搜尋與引用</option><option value="go">Go 編譯與測試</option><option value="java">Java 編譯與測試</option><option value="empty">空白畫布</option></select><button id="load" type="button">載入</button> <button id="json" type="button">匯出 JSON</button></aside>
-<aside id="run-panel" class="drawer right" hidden aria-labelledby="run-title"><div class="drawer-head"><div><h2 id="run-title">預覽結果</h2><p>使用範例資料，不呼叫模型或編譯器。</p></div><button type="button" data-close="run" aria-label="關閉預覽結果">×</button></div><div id="preflight"></div><div id="results"></div></aside>
+<aside id="history" class="drawer right sga-wide" hidden aria-labelledby="history-title"><div class="drawer-head"><div><h2 id="history-title">執行紀錄</h2><p>保留最近 20 次。勾選兩筆即可比較。</p></div><button type="button" data-close="history-toggle" aria-label="關閉執行紀錄">×</button></div><div id="history-list"></div><div id="history-diff"></div></aside>
+<aside id="options" class="drawer right" hidden aria-labelledby="options-title"><div class="drawer-head"><h2 id="options-title">畫布工具</h2><button type="button" data-close="options-toggle" aria-label="關閉畫布工具">×</button></div><label for="preset">流程範例</label><select id="preset"><option value="rust">搜尋 → Rust</option><option value="research">搜尋與引用</option><option value="go">Go 編譯與測試</option><option value="java">Java 編譯與測試</option><option value="empty">空白畫布</option><optgroup label="流程控制"><option value="branch">條件分支</option><option value="fix-loop">修正直到通過</option><option value="retry">重試示範</option></optgroup></select><button id="load" type="button">載入</button> <button id="json" type="button">匯出 JSON</button> <button id="import-flow" type="button">匯入 JSON</button><input id="flow-file" type="file" accept=".json,application/json" hidden><p class="sub sga-note">也可把 .json 拖到畫布上匯入。支援新版流程、v0.5 流程與 v0.5 匯出檔。</p><button id="fit-view" type="button">適合畫布</button></aside>
+<aside id="run-panel" class="drawer right sga-wide" hidden aria-labelledby="run-title"><div class="drawer-head"><div><h2 id="run-title">執行結果</h2><p>使用範例資料，不呼叫模型或編譯器。</p></div><button type="button" data-close="run" aria-label="關閉執行結果">×</button></div><p id="run-queue" class="sub" role="status"></p><div id="approvals"></div><div id="estimate-box"></div><div id="run-issues"></div><div id="preflight"></div><div id="results"></div></aside>
 </section>
 <div class="event"><strong>狀態</strong><span id="status" role="status">就緒。</span></div>
-</main><script>
+<dialog id="shortcut-help" class="sga-dialog" aria-labelledby="shortcut-title"><h2 id="shortcut-title">快捷鍵</h2><table class="sga-keys"><tbody>
+<tr><th scope="row">Ctrl+Enter</th><td>執行流程</td></tr>
+<tr><th scope="row">雙擊空白處</th><td>搜尋並加入節點</td></tr>
+<tr><th scope="row">點輸出 → 點輸入</th><td>不用拖曳也能接線（Esc 取消）</td></tr>
+<tr><th scope="row">空白鍵 + 拖曳／中鍵拖曳</th><td>平移畫布</td></tr>
+<tr><th scope="row">方向鍵</th><td>平移畫布或移動選取的節點</td></tr>
+<tr><th scope="row">滾輪、+ / −</th><td>縮放</td></tr>
+<tr><th scope="row">Shift+點選、框選</th><td>多選節點</td></tr>
+<tr><th scope="row">Ctrl+A</th><td>全選</td></tr>
+<tr><th scope="row">Ctrl+C / Ctrl+V</th><td>複製／貼上</td></tr>
+<tr><th scope="row">Ctrl+Z / Ctrl+Y</th><td>復原／重做</td></tr>
+<tr><th scope="row">Delete</th><td>刪除選取的節點</td></tr>
+<tr><th scope="row">Ctrl+B</th><td>略過（bypass）選取的節點</td></tr>
+<tr><th scope="row">Ctrl+M</th><td>停用（mute）選取的節點</td></tr>
+<tr><th scope="row">Ctrl+G</th><td>把選取的節點加入群組</td></tr>
+<tr><th scope="row">Esc</th><td>取消接線或關閉抽屜</td></tr>
+</tbody></table><p class="sub">在輸入框裡打字時，畫布快捷鍵不會作用。</p><form method="dialog"><button type="submit" class="primary">關閉</button></form></dialog>
+</main>
+<script src="comfy/graph.js"></script>
+<script src="comfy/executor.js"></script>
+<script src="comfy/core-nodes.js"></script>
+<script src="comfy/nodes.js"></script>
+<script src="comfy/migrate.js"></script>
+<script src="comfy/runs.js"></script>
+<script src="comfy/canvas.js"></script>
+<script src="comfy/minimap.js"></script>
+<script src="comfy/search.js"></script>
+<script>
 "use strict";
 const $=id=>document.getElementById(id);
 const catalog={
@@ -231,73 +266,16 @@ const skillIdPattern=/^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const schema="sea-agent-studio/agent";
 const profiles=new Map(builtins.map(a=>[a.id,{...a,role:a.detail,instructions:"",capabilities:a.capabilities||presets[a.id].map(n=>n[0])}]));
 
-const ns="http://www.w3.org/2000/svg";
-let selected=null,pending=null,storage=true,active=null,graph=null,preview=[],panel=null,returnFocus=null,profileId=null,savedSnapshot="";
+// The flow editor itself lives in comfy/app.js (SeaGraph.App); this script keeps
+// the shared catalogues, preflight check and panel plumbing it reuses.
+let storage=true,active=null,panel=null,returnFocus=null,profileId=null,savedSnapshot="";
+// changes: in-memory workflow per agent (used when localStorage is blocked).
+// completed: home-list run state per agent ("需要調整" / "已預覽" / "待設定").
 const changes=new Map(), completed=new Map();
-const panels={library:"library-toggle",inspector:"props-toggle",options:"options-toggle","run-panel":"run"};
-function base(name){const list=presets[name].map(([kind,x,y],idx)=>({id:"n"+(idx+1),kind,x,y,value:parts[kind].value||""}));return {name,nodes:list,edges:list.slice(1).map((n,i)=>[list[i].id,n.id]),next:list.length+1};}
-function readGraph(raw){
-  const g=JSON.parse(raw);
-  if(!g||!Object.hasOwn(presets,g.name)||!Array.isArray(g.nodes)||!Array.isArray(g.edges)||!Number.isInteger(g.next))return null;
-  if(!g.nodes.every(n=>Object.hasOwn(parts,n.kind)&&/^n[0-9]+$/.test(n.id)&&Number.isFinite(n.x)&&Number.isFinite(n.y)&&typeof n.value==="string"))return null;
-  return g;
-}
-function restore(id){
-  if(changes.has(id))return changes.get(id);
-  try{
-    const persisted=readGraph(localStorage.getItem(key+id));
-    if(persisted)return persisted;
-    if(id==="rust"){const legacy=readGraph(localStorage.getItem("sea-agent-canvas-v01"));if(legacy)return legacy;}
-  }catch{storage=false;}
-  return base(Object.hasOwn(presets,id)?id:id==="offline-rust-review"?"rust":"empty");
-}
+const panels={library:"library-toggle",inspector:"props-toggle",history:"history-toggle",options:"options-toggle","run-panel":"run"};
 const make=(tag,text,cls)=>{const el=document.createElement(tag);if(text!=null)el.textContent=text;if(cls)el.className=cls;return el;};
 const action=(text,on,cls)=>{const el=make("button",text,cls);el.type="button";el.onclick=on;return el;};
-function get(id){return graph.nodes.find(n=>n.id===id);}
 function status(text){$("status").textContent=text+(storage?"":"（瀏覽器不允許儲存，可匯出 JSON。）");}
-function save(){changes.set(active,graph);try{localStorage.setItem(key+active,JSON.stringify(graph));}catch{storage=false;}}
-function change(text){save();completed.delete(active);preview=[];render();status(text);}
-function describe(n){return n?parts[n.kind].group+"／"+parts[n.kind].label:"未知節點";}
-function pathLine(x1,y1,x2,y2){if(x2<x1&&y2-y1>110){
-  const mid=(y1+y2)/2;
-  return `M ${x1} ${y1} H ${x1+24} Q ${x1+34} ${y1} ${x1+34} ${y1+10} V ${mid-10} Q ${x1+34} ${mid} ${x1+24} ${mid} H ${x2-6} Q ${x2-16} ${mid} ${x2-16} ${mid+10} V ${y2-10} Q ${x2-16} ${y2} ${x2-6} ${y2} H ${x2}`;
-}const bend=Math.max(38,Math.abs(x2-x1)*.48);return `M ${x1} ${y1} C ${x1+bend} ${y1}, ${x2-bend} ${y2}, ${x2} ${y2}`;}
-function pos(n,out){
-  const port=$("nodes").querySelector(out?'[data-output="'+n.id+'"]':'[data-input="'+n.id+'"]');
-  if(!port)return [n.x+(out?167:0),n.y+72];
-  const rect=port.getBoundingClientRect(), board=$("board").getBoundingClientRect();
-  return [n.x+(out?167:0),rect.top+rect.height/2-board.top];
-}
-function addWire(x1,y1,x2,y2,temp){const path=document.createElementNS(ns,"path");path.setAttribute("d",pathLine(x1,y1,x2,y2));if(temp){path.setAttribute("stroke-dasharray","4 4");path.id="ghost";}$("wires").append(path);}
-function wires(){$("wires").replaceChildren();for(const [from,to] of graph.edges){const a=get(from),b=get(to);if(a&&b)addWire(...pos(a,true),...pos(b,false));}}
-function connects(start,target){const seen=new Set(),queue=[start];while(queue.length){const id=queue.pop();if(id===target)return true;if(seen.has(id))continue;seen.add(id);for(const [from,to] of graph.edges)if(from===id)queue.push(to);}return false;}
-function connect(from,to){const a=get(from),b=get(to);if(!a||!b)return;if(parts[a.kind].out!==parts[b.kind].in){status("類型不相容：「"+parts[a.kind].out+"」不能接「"+parts[b.kind].in+"」。");return;}if(connects(to,from)){status("不能循環連線，請改選其他輸入。");return;}if(graph.edges.some(e=>e[1]===to)){status("這個輸入已有連線；請在「節點設定」先移除。");return;}graph.edges.push([from,to]);pending=null;selected=to;change("已連線："+describe(a)+" → "+describe(b));}
-function place(n,x,y){n.x=Math.max(8,Math.min(864,Math.round(x)));n.y=Math.max(8,Math.min(n.agentRef?516:538,Math.round(y)));}
-function add(kind,x,y){if(!Object.hasOwn(parts,kind))return;if(graph.nodes.length>=40){status("這個示範最多放 40 個節點。");return;}const n={id:"n"+graph.next++,kind,value:parts[kind].value||""};place(n,x,y);graph.nodes.push(n);selected=n.id;change("已加入 "+describe(n));}
-function localPoint(e){const rect=$("board").getBoundingClientRect();return [e.clientX-rect.left,e.clientY-rect.top];}
-function startMove(e,n,box){if(e.button!==0)return;const b=e.currentTarget;b.setPointerCapture(e.pointerId);const [sx,sy]=[e.clientX,e.clientY], [ox,oy]=[n.x,n.y];let moved=false;
-b.onpointermove=ev=>{const dx=ev.clientX-sx,dy=ev.clientY-sy;if(!moved&&Math.hypot(dx,dy)<4)return;moved=true;place(n,ox+dx,oy+dy);box.style.left=n.x+"px";box.style.top=n.y+"px";wires();};
-const end=()=>{b.onpointermove=null;b.onpointerup=null;b.onpointercancel=null;if(moved){selected=n.id;save();box.classList.add("selected");for(const other of $("nodes").children)if(other!==box)other.classList.remove("selected");inspector();status("已移動 "+describe(n));}};b.onpointerup=end;b.onpointercancel=end;}
-function startWire(e,from){if(e.button!==0)return;const button=e.currentTarget;button.setPointerCapture(e.pointerId);const [sx,sy]=[e.clientX,e.clientY];let moved=false;
-button.onpointermove=ev=>{if(!moved&&Math.hypot(ev.clientX-sx,ev.clientY-sy)<5)return;moved=true;wires();addWire(...pos(get(from),true),...localPoint(ev),true);};
-button.onpointerup=ev=>{button.onpointermove=null;button.onpointerup=null;button.onpointercancel=null;if(!moved)return;button.dataset.skip="yes";setTimeout(()=>delete button.dataset.skip,0);wires();const target=document.elementFromPoint(ev.clientX,ev.clientY)?.closest("[data-input]");if(target){connect(from,target.dataset.input);}else status("請將連線拖到目標節點的輸入端。");};
-button.onpointercancel=()=>{button.onpointermove=null;button.onpointerup=null;button.onpointercancel=null;wires();};}
-function select(id){selected=id;for(const e of $("nodes").children)e.classList.toggle("selected",e.dataset.node===id);inspector();}
-function renderNodes(){$("nodes").replaceChildren();$("empty").hidden=Boolean(graph.nodes.length);for(const n of graph.nodes){const p=parts[n.kind],box=make("article",null,"node"+(selected===n.id?" selected":"")),head=action(describe(n),()=>{select(n.id);showPanel("inspector");},"drag");box.dataset.node=n.id;box.style.left=n.x+"px";box.style.top=n.y+"px";head.onpointerdown=e=>startMove(e,n,box);head.setAttribute("aria-label","設定 "+describe(n));box.append(head,make("small",p.hint));if(n.agentRef)box.append(make("small","來源："+ (profiles.get(n.agentRef)?.name||n.agentRef),"source"));const ports=make("div",null,"ports");if(p.in){const b=action("● "+p.in,()=>{if(pending)connect(pending,n.id);else status("請先點來源的輸出，或從輸出拖線到這裡。");});b.dataset.input=n.id;b.setAttribute("aria-label","輸入 "+p.in+" "+describe(n));ports.append(b);}else ports.append(make("span",""));
-const b=action(p.out+" ●",()=>{if(b.dataset.skip)return;pending=pending===n.id?null:n.id;for(const ob of $("nodes").querySelectorAll("[data-output]"))ob.setAttribute("aria-pressed",String(ob.dataset.output===pending));status(pending?"已選輸出「"+p.out+"」，請點目標輸入。":"取消連線選取。");});b.dataset.output=n.id;b.onpointerdown=e=>startWire(e,n.id);b.setAttribute("aria-label","輸出 "+p.out+" "+describe(n));b.setAttribute("aria-pressed",String(pending===n.id));ports.append(b);box.append(ports);$("nodes").append(box);}wires();}
-function inspector(){const region=$("props"),n=get(selected);$("props-toggle").disabled=!n;region.replaceChildren();if(!n){if(panel==="inspector")showPanel(null);region.append(make("p","選取節點以編輯設定。","sub"));return;}const p=parts[n.kind];region.append(make("h3",describe(n)),make("p","輸入： "+(p.in||"無")+(p.optional?"（選填）":"")+" ／ 輸出： "+p.out,"sub"));
-if(p.field){const l=make("label",p.field),inp=make("input");inp.id="setting";l.htmlFor=inp.id;inp.maxLength=220;inp.value=n.value;inp.oninput=()=>{n.value=inp.value;save();completed.delete(active);preview=[];renderResults();};region.append(l,inp);}
-const m=make("div",null,"moves");for(const [arrow,x,y,label] of [["←",-20,0,"向左"],["→",20,0,"向右"],["↑",0,-20,"向上"],["↓",0,20,"向下"]]){const b=action(arrow,()=>{place(n,n.x+x,n.y+y);save();const el=$("nodes").querySelector('[data-node="'+n.id+'"]');el.style.left=n.x+"px";el.style.top=n.y+"px";wires();status("已移動 "+describe(n));});b.setAttribute("aria-label",label+"移動節點");m.append(b);}region.append(m);
-for(const [from,to] of graph.edges.filter(e=>e.includes(n.id))){const line=make("div",null,"edge");line.append(make("span",describe(get(from))+" → "+describe(get(to))),action("移除線",()=>{graph.edges=graph.edges.filter(e=>e[0]!==from||e[1]!==to);change("已移除連線。");}));region.append(line);}
-region.append(action("移除節點",()=>{graph.nodes=graph.nodes.filter(x=>x.id!==n.id);graph.edges=graph.edges.filter(e=>!e.includes(n.id));if(pending===n.id)pending=null;selected=null;change("已從畫布移除節點。");},"danger"));}
-function simulate(n,incoming){const val=n.value.trim(), group=parts[n.kind].group;
-if(n.kind==="query"){if(!val)throw Error("查詢詞不能留白");return {text:"已準備查詢："+val,query:val};}
-if(n.kind==="read"){const tokens=incoming.query.toLowerCase().split(/[\s,，、]+/).filter(Boolean);const sources=Object.values(catalog).filter(a=>tokens.some(t=>a.terms.includes(t)));if(!sources.length)throw Error("預載索引沒有命中，請換關鍵字");return {text:"本機索引找到 "+sources.length+" 筆官方文件",sources};}
-if(n.kind==="cite")return {text:(val||"研究交接")+"：整理 "+incoming.sources.length+" 筆引用",sources:incoming.sources};
-if(n.kind.endsWith("-read")){if(!val)throw Error("請設定示範工作目錄");return {text:"套用 "+group+" 示範目錄 "+val,sources:incoming?.sources};}
-if(!val)throw Error("請設定示範指令");
-return {text:"模擬「"+val+"」 · 真實執行 NOT_RUN",sources:incoming.sources};
-}
 function configurationCheck(agent){
   const toolReview=(agent.tool_refs||[]).map(ref=>{
     const tool=toolsCatalog.get(ref.id);
@@ -312,10 +290,9 @@ function configurationCheck(agent){
   });
   return {toolReview,missingSkills:(agent.skill_refs||[]).filter(id=>!skills.has(id))};
 }
-function renderPreflight(){
-  const area=$("preflight");area.replaceChildren();
-  if(!preview.length)return;
-  const ids=[...new Set([active,...graph.nodes.map(n=>n.agentRef).filter(Boolean)])];
+function renderPreflight(agentIds,area=$("preflight")){
+  area.replaceChildren();
+  const ids=[...new Set((agentIds||[active]).filter(Boolean))];
   for(const id of ids){
     const agent=profiles.get(id);if(!agent)continue;
     const {toolReview,missingSkills}=configurationCheck(agent);
@@ -331,27 +308,17 @@ function renderPreflight(){
     area.append(section);
   }
 }
-function renderResults(){renderPreflight();const area=$("results");area.replaceChildren();for(const item of preview){const r=make("div",null,"result");r.append(make("strong",item.status+" · "+item.name),make("div",item.text));for(const s of item.sources||[]){const a=make("a",s.title);a.href=s.url;a.target="_blank";a.rel="noopener noreferrer";const d=make("div");d.append(a);r.append(d);}area.append(r);}if(!preview.length)area.append(make("p","尚無結果。","sub"));}
-function run(){preview=[];if(!graph.nodes.length){renderResults();status("畫布空白，請先加積木。");return;}const done=new Map(),todo=new Map(graph.nodes.map(n=>[n.id,n]));while(todo.size){let progressed=false;for(const [id,n] of todo){const e=graph.edges.find(v=>v[1]===id),p=parts[n.kind];if(e&&!done.has(e[0]))continue;try{if(!e&&p.in&&!p.optional)throw Error("缺少輸入："+p.in);if(e&&!done.get(e[0]))throw Error("前一步未通過");const out=simulate(n,e?done.get(e[0]):null);done.set(id,out);preview.push({...out,status:"示範",name:describe(n)});}catch(err){done.set(id,null);preview.push({status:"阻擋",name:describe(n),text:err.message});}todo.delete(id);progressed=true;}if(!progressed){status("發現循環或失效連線，停止預覽。");renderResults();return;}}
-renderResults();const passed=preview.filter(p=>p.status==="示範").length;status("預覽 "+passed+"/"+preview.length+" 個節點完成。真實任務未執行。");}
-function render(){renderNodes();inspector();renderResults();}
-function palette(){const lib=$("palette");for(const group of ["搜尋","Rust","Go","Java"]){lib.append(make("div",group,"group"));for(const [kind,p] of Object.entries(parts).filter(([,p])=>p.group===group)){const b=action("＋ "+p.label,()=>{const v=$("viewport"),i=graph.nodes.length;showPanel(null);add(kind,v.scrollLeft+20+(i%3)*199,v.scrollTop+24+(Math.floor(i/3)%4)*115);$("viewport").focus({preventScroll:true});},"part");b.append(make("small",p.hint));b.draggable=true;b.dataset.part=kind;b.setAttribute("aria-label","加入 "+group+" "+p.label);b.ondragstart=e=>{e.dataTransfer.setData("application/x-sea-node",kind);e.dataTransfer.effectAllowed="copy";requestAnimationFrame(()=>$("library").classList.add("drop-through"));};b.ondragend=()=>$("library").classList.remove("drop-through");lib.append(b);}}}
-$("board").ondragover=e=>{if(!e.dataTransfer.types.includes("application/x-sea-node"))return;e.preventDefault();e.dataTransfer.dropEffect="copy";$("board").classList.add("hot");};$("board").ondragleave=e=>{if(!$("board").contains(e.relatedTarget))$("board").classList.remove("hot");};$("board").ondrop=e=>{e.preventDefault();$("board").classList.remove("hot");const kind=e.dataTransfer.getData("application/x-sea-node");if(kind){const [x,y]=localPoint(e);showPanel(null);add(kind,x-20,y-14);}};
-$("load").onclick=()=>{const name=$("preset").value;if(graph.nodes.length&&JSON.stringify(graph)!==JSON.stringify(base(graph.name||"rust"))&&!window.confirm("載入範例會取代目前畫布。可先匯出 JSON。繼續嗎？"))return;graph=base(name);selected=null;pending=null;$("viewport").scrollTo(0,0);showPanel(null);change(name==="empty"?"已載入空白畫布。":"已載入流程範例。");$("viewport").focus({preventScroll:true});};
-$("run").onclick=()=>{run();completed.set(active,preview.some(p=>p.status==="阻擋")?"需要調整":preview.length?"已預覽":"待設定");showPanel(panel==="run-panel"?null:"run-panel");};
-$("json").onclick=()=>{const payload={schema_version:1,mode:"demo_only",graph,agent_refs:[...new Set(graph.nodes.map(n=>n.agentRef).filter(Boolean))],preview};const u=URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)],{type:"application/json"}));const a=make("a");a.href=u;a.download="agent-studio-"+active+".json";a.click();setTimeout(()=>URL.revokeObjectURL(u),600);};
-document.addEventListener("keydown",e=>{if(e.key==="Escape"&&pending){pending=null;for(const ob of $("nodes").querySelectorAll("[data-output]"))ob.setAttribute("aria-pressed","false");status("取消連線選取。");}else if(e.key==="Escape"&&panel){const toggle=$(panels[panel]);showPanel(null);toggle.focus();}});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&panel&&!e.defaultPrevented){const toggle=$(panels[panel]);showPanel(null);toggle.focus();}});
 function showPanel(id){
   panel=id;
   for(const [name,toggle] of Object.entries(panels)){$(name).hidden=name!==id;$(toggle).setAttribute("aria-expanded",String(name===id));}
 }
-for(const name of ["library","inspector","options"]){
+for(const name of ["library","inspector","history","options"]){
   $(panels[name]).onclick=()=>showPanel(panel===name?null:name);
 }
 for(const button of document.querySelectorAll("[data-close]")){
-  button.onclick=()=>{showPanel(null);const target=$(button.dataset.close);(target.disabled?$("viewport"):target).focus();};
+  button.onclick=()=>{showPanel(null);const target=$(button.dataset.close);if(target.disabled)flowApp()?.focusCanvas();else target.focus();};
 }
-$("viewport").addEventListener("pointerdown",e=>{if(panel&&!e.target.closest(".node"))showPanel(null);});
 let assemblySection="agents";
 function showPage(id){
   const section=id==="assembly"?assemblySection:id==="skills"||id==="skill-editor"?"skills":id==="tools"||id==="tool-editor"?"tools":"agents";
@@ -518,46 +485,19 @@ $("profile-file").onchange=async e=>{
       (missing.length?"。缺少 "+missing.length+" 個 Skill，請到 Skills 匯入。":"")+(missingTools.length?"。缺少 "+missingTools.length+" 個 Tool，請到 Tools 建立對應 ID。":"");
   }catch(error){$("home-notice").textContent="無法匯入："+error.message;}
 };
-function insertProfile(id){
-  const agent=profiles.get(id), kinds=agent?.capabilities||[];
-  if(!kinds.length)return;
-  if(graph.nodes.length+kinds.length>40){status("這組能力會讓節點超過 40 個，未加入。");return;}
-  const v=$("viewport");
-  const occupied=(x,y)=>graph.nodes.some(n=>Math.abs(x-n.x)<171&&Math.abs(y-n.y)<118);
-  let inserted=0;
-  for(const kind of kinds){
-    const candidates=[];
-    for(let row=0;row<5;row++)for(let col=0;col<5;col++)candidates.push([20+col*199,24+row*121]);
-    candidates.sort((a,b)=>Math.hypot(a[0]-v.scrollLeft,a[1]-v.scrollTop)-Math.hypot(b[0]-v.scrollLeft,b[1]-v.scrollTop));
-    const loc=candidates.find(([x,y])=>!occupied(x,y));
-    if(!loc)break;
-    const n={id:"n"+graph.next++,kind,value:parts[kind].value||"",agentRef:id};
-    place(n,...loc);graph.nodes.push(n);inserted++;
-  }
-  showPanel(null);
-  if(inserted)change("已從「"+agent.name+"」加入 "+inserted+" 個能力節點"+(inserted<kinds.length?"，其餘畫布空間不足。":"。請按需要接線。"));
-  else status("畫布空間不足；未加入能力。");
-}
-function renderReuse(){
-  const host=$("reuse-agents"),available=[...profiles.values()].filter(p=>p.capabilities.length);
-  host.replaceChildren();if(!available.length)return;
-  host.append(make("p","重用 Agent 的能力","group"));
-  const row=make("div",null,"reuse-form"),chooser=make("select");
-  chooser.setAttribute("aria-label","選擇要重用的 Agent");
-  for(const agent of available){const opt=make("option",agent.name);opt.value=agent.id;chooser.append(opt);}
-  chooser.value=available.some(p=>p.id===active)?active:available[0].id;
-  row.append(chooser,action("加入",()=>insertProfile(chooser.value)));host.append(row);
-}
+// Reuse-agent insertion and the node graph are handled by SeaGraph.App (comfy/app.js).
+const flowApp=()=>globalThis.SeaGraph&&globalThis.SeaGraph.App&&globalThis.SeaGraph.App.ready?globalThis.SeaGraph.App:null;
 $("open-flow").onclick=()=>{
   const agent=profiles.get(profileId);
-  active=agent.id;graph=restore(active);selected=null;pending=null;preview=[];
-  $("editor-title").textContent=agent.name;$("preset").value=graph.name;
-  showPage("editor");showPanel(null);renderReuse();
-  $("viewport").scrollTo(0,0);render();status("就緒。流程編輯會自動儲存在這個瀏覽器。");
+  active=agent.id;
+  $("editor-title").textContent=agent.name;
+  showPage("editor");showPanel(null);
+  const app=flowApp();
+  if(app)app.open(active);else status("流程引擎未載入（comfy/*.js），無法開啟節點畫布。");
   $("back").focus();
 };
 $("back").onclick=()=>{
-  showPanel(null);openProfile(active);active=null;$("open-flow").focus();
+  showPanel(null);flowApp()?.close();openProfile(active);active=null;$("open-flow").focus();
 };
 for(const [kind,part] of Object.entries(parts)){
   const l=make("label"),check=make("input");check.type="checkbox";check.value=kind;
@@ -866,7 +806,14 @@ $("runtime-run").onclick=async()=>{
 $("get-request").onclick=()=>{
   if(runtimeRequest)download("rust-review.request.json",JSON.stringify(runtimeRequest,null,2)+"\n","application/json");
 };
-restoreTools();restoreSkills();restoreProfiles();renderHome();palette();
+// Explicit bridge for comfy/app.js: inline const/let bindings are not on window.
+window.SeaStudio=Object.freeze({
+  profiles,skills,toolsCatalog,toolOps,parts,presets,completed,changes,
+  showPanel,status,configurationCheck,renderPreflight,renderHome,make,action,
+  getActive:()=>active,getPanel:()=>panel,
+  storageOk:()=>storage,setStorageOk:value=>{storage=Boolean(value);}
+});
+restoreTools();restoreSkills();restoreProfiles();renderHome();
 
 </script><script>
 "use strict";
@@ -1256,4 +1203,6 @@ restoreTools();restoreSkills();restoreProfiles();renderHome();palette();
   window.addEventListener("resize",()=>{if(!$("assembly").hidden)drawWires();});
 })();
 
-</script></body></html>
+</script>
+<script src="comfy/app.js"></script>
+</body></html>
