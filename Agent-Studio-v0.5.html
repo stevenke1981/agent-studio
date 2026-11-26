@@ -52,6 +52,33 @@
 #assembly-scale{min-width:42px;text-align:center;color:var(--muted);font:.82rem ui-monospace,monospace}
 @media(max-width:600px){#assembly-viewport{height:max(358px,calc(100dvh - 254px))}.assembly-footer{font-size:.77rem}}
 
+/* Workstream C: home/list rows (status, secondary flow button, empty states, mobile layout) */
+.agent-row{grid-template-columns:minmax(0,1fr) minmax(7.5rem,auto) auto;grid-template-areas:"info state actions"}
+.list-head{grid-template-columns:minmax(0,1fr) minmax(7.5rem,auto) auto}
+.agent-row>.agent-info{grid-area:info;min-width:0}
+.agent-row>.agent-state{grid-area:state;display:block;min-width:0;white-space:normal}
+.agent-state>span{white-space:nowrap}
+.agent-row>.row-actions,.agent-row>.configure{grid-area:actions}
+.row-actions{display:flex;align-items:center;justify-self:end;gap:8px;flex-wrap:nowrap}
+.row-actions .configure{white-space:nowrap}
+.agent-run{display:block;font-size:.78rem;color:var(--muted)}
+.agent-row .agent-info strong,.agent-row .agent-info small{overflow-wrap:anywhere}
+.flow-open{color:#344e60;border-color:#b9c7d6;background:#f3f6f9}
+.home-heading .actions{min-width:0}
+@media(max-width:600px){
+  .list-head{display:none}
+  .agent-row{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"info actions" "state actions";row-gap:4px;padding-inline:10px}
+  .agent-row>.agent-state{padding-left:32px;flex-direction:row;flex-wrap:wrap;column-gap:8px;align-items:baseline}
+  .agent-run{display:inline}
+  .agent-row>.agent-info{align-self:start}
+  .agent-row>.row-actions,.agent-row>.configure{align-self:center}
+  .row-actions{gap:6px}
+  .row-actions .configure{padding:4px 8px;font-size:.8rem}
+  .home-heading{align-items:stretch}
+  .home-heading .actions{width:100%}
+  .home-heading .actions>button{flex:1 1 auto;white-space:nowrap}
+  .home-heading .actions>.primary{order:-1}
+}
 </style>
 <link rel="stylesheet" href="comfy/canvas.css">
 <link rel="stylesheet" href="comfy/app.css">
@@ -386,14 +413,24 @@ function restoreProfiles(){
 function newId(){return "custom-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,10);}
 function renderHome(focusId){
   $("agent-list").replaceChildren();
+  const readJSON=key=>{try{return JSON.parse(localStorage.getItem(key));}catch{return null;}};
+  const runLabel={ok:"完成",error:"失敗",cancelled:"已取消"};
+  if(!profiles.size)$("agent-list").append(make("p","還沒有 Agent。按上方「＋ 新增 Agent」建立第一個。","sub"));
   for(const agent of profiles.values()){
     const row=make("article",null,"agent-row"),info=make("div",null,"agent-info");
     const icon=make("span",agent.icon||"Ag","agent-icon");icon.setAttribute("aria-hidden","true");
     const details=make("div");details.append(make("strong",agent.name),make("small",agent.role||agent.capabilities.length+" 項能力"));
     info.append(icon,details);
-    const state=make("span",completed.get(agent.id)||(agent.id.startsWith("custom-")?"已儲存":"範例"),"agent-state");state.dataset.agentState=agent.id;
+    const flow=readJSON("sea-agent-studio-v06.flow."+agent.id),runs=readJSON("sea-agent-studio-v06.runs."+agent.id);
+    const nodeCount=flow&&Array.isArray(flow.nodes)?flow.nodes.length:0;
+    const latest=Array.isArray(runs)?runs.filter(r=>r&&typeof r==="object").sort((a,b)=>String(b.at).localeCompare(String(a.at)))[0]:null;
+    const state=make("span",null,"agent-state");state.dataset.agentState=agent.id;
+    state.append(make("span",nodeCount?nodeCount+" 個節點":(completed.get(agent.id)||(agent.id.startsWith("custom-")?"已儲存":"範例"))));
+    state.append(make("span",latest?"上次執行："+(runLabel[latest.status]||latest.status||"完成"):"尚未執行","agent-run"));
+    const flowButton=action("流程 →",()=>openFlow(agent.id),"configure flow-open");flowButton.setAttribute("aria-label","開啟 "+agent.name+" 的流程");
     const button=action("設定 →",()=>openProfile(agent.id),"configure");button.dataset.configure=agent.id;button.setAttribute("aria-label","設定 "+agent.name);
-    row.append(info,state,button);$("agent-list").append(row);
+    const actions=make("div",null,"row-actions");actions.append(flowButton,button);
+    row.append(info,state,actions);$("agent-list").append(row);
   }
   if(focusId)$("agent-list").querySelector('[data-configure="'+focusId+'"]')?.focus();
 }
@@ -487,15 +524,17 @@ $("profile-file").onchange=async e=>{
 };
 // Reuse-agent insertion and the node graph are handled by SeaGraph.App (comfy/app.js).
 const flowApp=()=>globalThis.SeaGraph&&globalThis.SeaGraph.App&&globalThis.SeaGraph.App.ready?globalThis.SeaGraph.App:null;
-$("open-flow").onclick=()=>{
-  const agent=profiles.get(profileId);
+function openFlow(agentId){
+  const agent=profiles.get(agentId);
+  if(!agent)return;
   active=agent.id;
   $("editor-title").textContent=agent.name;
   showPage("editor");showPanel(null);
   const app=flowApp();
   if(app)app.open(active);else status("流程引擎未載入（comfy/*.js），無法開啟節點畫布。");
   $("back").focus();
-};
+}
+$("open-flow").onclick=()=>openFlow(profileId);
 $("back").onclick=()=>{
   showPanel(null);flowApp()?.close();openProfile(active);active=null;$("open-flow").focus();
 };
@@ -542,7 +581,7 @@ function restoreSkills(){
 }
 function renderSkills(){
   const list=$("skill-list");list.replaceChildren();
-  if(!skills.size){list.append(make("p","還沒有技能。建立一份，或匯入現有的 SKILL.md。","sub"));return;}
+  if(!skills.size){list.append(make("p","還沒有 Skill。按上方「＋ 新增 Skill」建立第一個，或匯入現有的 SKILL.md。","sub"));return;}
   for(const skill of skills.values()){
     const row=make("article",null,"agent-row"),info=make("div",null,"agent-info"),labels=make("div");
     labels.append(make("strong",skill.id),make("small",skill.description));info.append(make("span","Sk","agent-icon"),labels);
@@ -662,6 +701,7 @@ function storeTools(){
 }
 function renderTools(){
   const list=$("tool-list");list.replaceChildren();
+  if(!toolsCatalog.size)list.append(make("p","還沒有 Tool。按上方「＋ 新增 Tool」建立第一個。","sub"));
   for(const tool of toolsCatalog.values()){
     const row=make("article",null,"agent-row"),info=make("div",null,"agent-info"),labels=make("div");
     labels.append(make("strong",tool.name),make("small",tool.id+" · "+tool.operations.map(op=>toolOps[op]).join("、")));
