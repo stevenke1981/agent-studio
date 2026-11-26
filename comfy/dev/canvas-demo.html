@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SeaGraph 畫布示範</title>
+<link rel="stylesheet" href="../canvas.css">
+<style>
+  html, body { height: 100%; margin: 0; }
+  body { display: flex; flex-direction: column; background: #f6f5f1; color: #212222; font: 14px/1.5 system-ui, "Microsoft JhengHei", sans-serif; }
+  .bar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 7px 10px; border-bottom: 1px solid #d8d9d3; background: #fbfaf7; }
+  .bar button { min-height: 32px; padding: 4px 10px; font: inherit; background: #fff; border: 1px solid #c5cac7; border-radius: 5px; cursor: pointer; }
+  .bar button:hover:not(:disabled) { background: #e9eef2; }
+  .bar button.primary { background: #253f5c; border-color: #253f5c; color: #fff; }
+  .bar button:disabled { opacity: .5; cursor: default; }
+  .bar button:focus-visible { outline: 2px solid #4284ca; outline-offset: 2px; }
+  .bar .drag { cursor: grab; border-style: dashed; }
+  .bar h1 { font-size: 15px; margin: 0 8px 0 0; }
+  #status { flex: 1 1 260px; min-width: 0; color: #253f5c; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #host { flex: 1; min-height: 0; position: relative; }
+  .help { font-size: 12px; color: #5b605f; padding: 3px 10px; background: #fbfaf7; border-bottom: 1px solid #d8d9d3; }
+</style>
+</head>
+<body>
+<div class="bar" role="toolbar" aria-label="示範工具列">
+  <h1>SeaGraph 畫布示範（mock 引擎）</h1>
+  <button id="run" class="primary" type="button">執行（Ctrl+Enter）</button>
+  <button id="cancel" type="button" disabled>取消</button>
+  <button id="clear" type="button">清除狀態</button>
+  <button id="fit" type="button">符合畫面</button>
+  <button id="add" type="button">新增節點…</button>
+  <button id="big" type="button">載入 300 節點壓力測試</button>
+  <button id="reset" type="button">重設範例</button>
+  <button class="drag" type="button" draggable="true" data-type="demo/summarize" aria-label="拖曳到畫布加入摘要節點">⠿ 拖曳：摘要</button>
+  <button class="drag" type="button" draggable="true" data-type="core/note" aria-label="拖曳到畫布加入備註節點">⠿ 拖曳：備註</button>
+  <div id="status" role="status" aria-live="polite"></div>
+</div>
+<div class="help">拖曳輸出到輸入連線，或點輸出再點輸入（Esc 取消）。雙擊空白處搜尋節點；雙擊連線插入轉接點；右鍵或 ⋯ 開啟選單。空白處拖曳＝框選，Alt／空白鍵／中鍵拖曳＝平移，滾輪＝縮放。</div>
+<div id="host"></div>
+
+<script src="mock-engine.js"></script>
+<script src="../canvas.js"></script>
+<script src="../minimap.js"></script>
+<script src="../search.js"></script>
+<script>
+(function () {
+  var SG = globalThis.SeaGraph;
+  var statusEl = document.getElementById("status");
+  function say(t) { statusEl.textContent = t; }
+
+  function sample() {
+    var N = function (id, type, x, y, widgets, extra) { return Object.assign({ id: id, type: type, x: x, y: y, widgets: widgets || {} }, extra || {}); };
+    var L = function (id, from, out, to, inp) { return { id: id, from: from, out: out, to: to, in: inp }; };
+    return {
+      schema: "sea-agent-studio/workflow", version: 1, agent: "demo",
+      nodes: [
+        N("n1", "demo/query", 40, 60, { query: "Rust 測試", lang: "zh" }),
+        N("n2", "demo/search", 320, 40, { limit: 5, official: true }, { converted: ["limit"] }),
+        N("n3", "demo/number", 40, 250, { value: 3 }),
+        N("n4", "demo/text", 320, 270, { text: "條列" }),
+        N("n5", "demo/summarize", 600, 60, { prompt: "條列重點，附上引用。", tone: "plain" }),
+        N("n6", "core/approval", 880, 60, { message: "摘要將寫入交接報告，要繼續嗎？", auto: false }),
+        N("n7", "demo/report", 1160, 60, { title: "研究交接", include: true }),
+        N("n8", "demo/text", 40, 470, { text: "Rust 專案" }, { title: "主題" }),
+        N("n9", "core/branch", 320, 470, { mode: "contains", pattern: "Rust", negate: false }),
+        N("n10", "demo/echo", 600, 440, { prefix: "Rust：" }, { title: "Rust 路線" }),
+        N("n11", "demo/echo", 600, 580, { prefix: "研究：" }, { title: "研究路線" }),
+        N("n12", "core/merge", 880, 470, {}),
+        N("n13", "demo/text", 40, 760, { text: "初版程式" }, { title: "初始程式" }),
+        N("n14", "core/loop-start", 320, 760, { max: 3 }),
+        N("n15", "demo/echo", 600, 740, { prefix: "修正：" }, { title: "修正程式" }),
+        N("n16", "demo/echo", 880, 740, { prefix: "測試：" }, { title: "執行測試", retry: { max: 2, delay: 0 } }),
+        N("n17", "core/loop-end", 1160, 760, { mode: "truthy", pattern: "", negate: false }),
+        N("n18", "core/note", 1160, 420, { text: "這個區塊示範條件分支：主題包含 Rust 時，研究路線會被略過。" }),
+        N("n19", "mystery/old-node", 1440, 760, { foo: "舊版節點" }, { title: "舊版元件" })
+      ],
+      links: [
+        L("l1", "n1", "query", "n2", "query"), L("l2", "n3", "value", "n2", "limit"),
+        L("l3", "n2", "sources", "n5", "sources"), L("l4", "n4", "text", "n5", "style"),
+        L("l5", "n5", "summary", "n6", "value"), L("l6", "n6", "value", "n7", "summary"),
+        L("l7", "n8", "text", "n9", "value"), L("l8", "n9", "true", "n10", "value"),
+        L("l9", "n9", "false", "n11", "value"), L("l10", "n10", "text", "n12", "a"),
+        L("l11", "n11", "text", "n12", "b"), L("l12", "n12", "value", "n7", "extra"),
+        L("l13", "n13", "text", "n14", "init"), L("l14", "n14", "value", "n15", "value"),
+        L("l15", "n15", "text", "n16", "value"), L("l16", "n16", "text", "n17", "value"),
+        L("l17", "n14", "loop", "n17", "loop"), L("l18", "n17", "result", "n19", "in")
+      ],
+      groups: [{ id: "g1", title: "搜尋與摘要", x: 20, y: 0, w: 1400, h: 400, color: "#3b82f6" }],
+      view: { x: 20, y: 20, k: 0.8 }, next: 40
+    };
+  }
+
+  var graph = new SG.Graph(sample());
+  var runCtl = null;
+  var approvals = {};
+
+  var canvas = SG.Canvas.mount(document.getElementById("host"), {
+    graph: graph, registry: SG.registry, types: SG.types,
+    onStatus: say,
+    onSelect: function (ids) { if (ids.length) say("選取：" + ids.join("、")); },
+    onOpenNode: function (id) { var n = graph.getNode(id); say("（示範）開啟設定：" + (n.title || id)); },
+    onRequestRun: function () { run(); },
+    onApprove: function (id, ok) { if (approvals[id]) approvals[id](ok); }
+  });
+  globalThis.demoCanvas = canvas;
+  globalThis.demoGraph = graph;
+
+  function wait(ms) {
+    return new Promise(function (res, rej) {
+      var t = setTimeout(res, ms);
+      if (runCtl) runCtl.timers.push(function () { clearTimeout(t); rej(new Error("cancelled")); });
+    });
+  }
+  function title(id) { var n = graph.getNode(id); var d = n && SG.registry.get(n.type); return (n && n.title) || (d && d.title) || id; }
+
+  function downstream(startIds, stopType) {
+    var seen = new Set(), stack = startIds.slice();
+    while (stack.length) {
+      var id = stack.pop();
+      if (seen.has(id)) continue;
+      var n = graph.getNode(id);
+      if (!n || n.type === stopType) continue;
+      seen.add(id);
+      graph.links.forEach(function (l) { if (l.from === id) stack.push(l.to); });
+    }
+    return seen;
+  }
+  function loopBody(startId, endId) {
+    var fwd = downstream([startId], null), back = new Set([endId]), stack = [endId];
+    while (stack.length) { var id = stack.pop(); graph.links.forEach(function (l) { if (l.to === id && !back.has(l.from)) { back.add(l.from); stack.push(l.from); } }); }
+    return Array.from(fwd).filter(function (id) { return back.has(id) && id !== startId && id !== endId; });
+  }
+
+  async function step(id, extra) {
+    extra = extra || {};
+    for (var p = 0; p <= 4; p++) {
+      canvas.setNodeState(id, Object.assign({ status: "running", progress: p / 4 }, extra));
+      await wait(110);
+    }
+  }
+
+  async function run() {
+    if (runCtl) return;
+    runCtl = { timers: [] };
+    document.getElementById("run").disabled = true;
+    document.getElementById("cancel").disabled = false;
+    canvas.clearStates();
+    var order;
+    try { order = graph.order(); } catch (e) { say("無法執行：" + e.message); finish(); return; }
+    var done = new Set(), blocked = new Set(), inactive = new Set();
+    order.forEach(function (id) { canvas.setNodeState(id, { status: "queued" }); });
+    say("開始示範執行，共 " + order.length + " 個節點。");
+    try {
+      for (var i = 0; i < order.length; i++) {
+        var id = order[i], n = graph.getNode(id), def = SG.registry.get(n.type);
+        if (done.has(id)) continue;
+        if (n.missing || !def) { canvas.setNodeState(id, { status: "error", message: "缺少節點類型：" + n.type }); continue; }
+        if (def.virtual) { canvas.setNodeState(id, { status: "idle" }); continue; }
+        if (n.mode === "mute") { canvas.setNodeState(id, { status: "skipped", message: "已停用" }); blocked.add(id); continue; }
+        var ups = graph.links.filter(function (l) { return l.to === id; });
+        if (ups.length && ups.every(function (l) { return inactive.has(l.id); })) {
+          canvas.setNodeState(id, { status: "skipped", message: "branch" });
+          graph.links.forEach(function (l) { if (l.from === id) { inactive.add(l.id); canvas.setLinkState(l.id, { inactive: true }); } });
+          continue;
+        }
+        if (ups.some(function (l) { return blocked.has(l.from); })) { canvas.setNodeState(id, { status: "skipped", message: "前一步未通過" }); blocked.add(id); continue; }
+
+        if (n.type === "core/approval" && !n.widgets.auto) {
+          canvas.setNodeState(id, { status: "waiting", approval: { message: n.widgets.message || "請確認是否繼續" } });
+          say("「" + title(id) + "」等待核准。");
+          var ok = await new Promise(function (res, rej) {
+            approvals[id] = res;
+            runCtl.timers.push(function () { rej(new Error("cancelled")); });
+          });
+          delete approvals[id];
+          if (!ok) { canvas.setNodeState(id, { status: "error", message: "已拒絕" }); blocked.add(id); continue; }
+          canvas.setNodeState(id, { status: "done", preview: "已核准，繼續執行。" });
+          done.add(id);
+          continue;
+        }
+        if (n.type === "core/branch") {
+          await step(id);
+          var text = "Rust 專案", taken = text.indexOf(n.widgets.pattern || "") >= 0 ? "true" : "false";
+          graph.links.forEach(function (l) {
+            if (l.from === id && l.out !== taken) { inactive.add(l.id); canvas.setLinkState(l.id, { inactive: true }); }
+          });
+          canvas.setNodeState(id, { status: "done", preview: "條件「包含 " + n.widgets.pattern + "」：" + (taken === "true" ? "成立" : "不成立") });
+          done.add(id);
+          continue;
+        }
+        if (n.type === "core/merge") {
+          var live = ups.filter(function (l) { return !inactive.has(l.id); });
+          await step(id);
+          canvas.setNodeState(id, { status: "done", preview: "採用輸入 " + (live[0] ? live[0].in.toUpperCase() : "（無）") });
+          done.add(id);
+          continue;
+        }
+        if (n.type === "core/loop-start") {
+          var endLink = graph.links.find(function (l) { return l.from === id && l.out === "loop"; });
+          var endId = endLink && endLink.to;
+          var body = endId ? loopBody(id, endId).sort(function (a, b) { return order.indexOf(a) - order.indexOf(b); }) : [];
+          var max = Number(n.widgets.max) || 3, rounds = Math.min(2, max);
+          for (var it = 0; it < rounds; it++) {
+            var iter = { index: it, max: max };
+            await step(id, { iteration: iter });
+            canvas.setNodeState(id, { status: "done", iteration: iter, preview: "第 " + (it + 1) + " 輪" });
+            for (var b = 0; b < body.length; b++) {
+              var bid = body[b], bn = graph.getNode(bid);
+              var retryMax = bn.retry && bn.retry.max || 0;
+              if (retryMax && it === 0) {
+                await step(bid, { iteration: iter });
+                canvas.setNodeState(bid, { status: "running", iteration: iter, attempt: { n: 1, max: retryMax }, message: "測試暫時失敗（模擬），重試中…" });
+                await wait(500);
+                await step(bid, { iteration: iter, attempt: { n: 1, max: retryMax } });
+              } else {
+                await step(bid, { iteration: iter });
+              }
+              canvas.setNodeState(bid, { status: "done", iteration: iter, preview: title(bid) + "：第 " + (it + 1) + " 輪" + (it === rounds - 1 ? "，測試通過" : "，仍有失敗") });
+            }
+          }
+          body.forEach(function (x) { done.add(x); });
+          if (endId) {
+            await step(endId);
+            canvas.setNodeState(endId, { status: "done", preview: "共 " + rounds + " 輪，條件成立後停止。" });
+            done.add(endId);
+          }
+          done.add(id);
+          continue;
+        }
+        await step(id);
+        var lines = [title(id) + "：模擬輸出"];
+        if (n.type === "demo/search") lines.push("找到 3 筆官方文件", "· The Rust Book", "· Rust by Example", "· rustc 測試指南", "· cargo test 參考", "· 更多…", "· 第 7 行（應可捲動）");
+        if (n.type === "demo/report") lines.push("標題：" + n.widgets.title, "真實執行 NOT_RUN");
+        canvas.setNodeState(id, { status: i % 5 === 3 ? "cached" : "done", preview: lines.join("\n") });
+        done.add(id);
+      }
+      say("示範執行完成。");
+    } catch (e) {
+      if (e && e.message === "cancelled") {
+        order.forEach(function (id) { var s = canvas.getState(id).status; if (s === "queued" || s === "running" || s === "waiting") canvas.setNodeState(id, { status: "skipped", message: "已取消" }); });
+        say("已取消示範執行。");
+      } else { say("示範執行失敗：" + e.message); }
+    }
+    finish();
+  }
+  function finish() {
+    runCtl = null;
+    approvals = {};
+    document.getElementById("run").disabled = false;
+    document.getElementById("cancel").disabled = true;
+  }
+
+  document.getElementById("run").onclick = run;
+  document.getElementById("cancel").onclick = function () { if (runCtl) runCtl.timers.splice(0).forEach(function (f) { f(); }); };
+  document.getElementById("clear").onclick = function () { canvas.clearStates(); say("已清除狀態。"); };
+  document.getElementById("fit").onclick = function () { canvas.fit(); canvas.focus(); };
+  document.getElementById("add").onclick = function () { canvas.openSearch(); };
+  document.getElementById("reset").onclick = function () { graph.load(sample()); canvas.clearStates(); say("已重設範例。"); };
+  document.getElementById("big").onclick = function () {
+    var nodes = [], links = [], types = ["demo/query", "demo/search", "demo/summarize", "demo/report"];
+    for (var i = 0; i < 300; i++) {
+      var col = i % 20, row = Math.floor(i / 20), t = types[col % 4];
+      nodes.push({ id: "n" + (i + 1), type: t, x: col * 260, y: row * 260, widgets: {} });
+      if (col % 4 === 1) links.push({ id: "l" + (i + 1), from: "n" + i, out: "query", to: "n" + (i + 1), in: "query" });
+      if (col % 4 === 2) links.push({ id: "l" + (i + 1), from: "n" + i, out: "sources", to: "n" + (i + 1), in: "sources" });
+      if (col % 4 === 3) links.push({ id: "l" + (i + 1), from: "n" + i, out: "summary", to: "n" + (i + 1), in: "summary" });
+    }
+    var t0 = performance.now();
+    graph.load({ nodes: nodes, links: links, groups: [], view: { x: 0, y: 0, k: 0.4 }, next: 1000 });
+    requestAnimationFrame(function () { requestAnimationFrame(function () { say("已載入 300 個節點，繪製約 " + Math.round(performance.now() - t0) + " ms。"); canvas.fit(); }); });
+  };
+  document.querySelectorAll(".drag").forEach(function (b) {
+    b.addEventListener("dragstart", function (e) { e.dataTransfer.setData("application/x-sea-node", b.dataset.type); e.dataTransfer.effectAllowed = "copy"; });
+  });
+  canvas.focus();
+  say("示範已就緒：按 Ctrl+Enter 或「執行」觀看狀態變化。");
+})();
+</script>
+</body>
+</html>
