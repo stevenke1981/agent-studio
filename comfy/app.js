@@ -701,15 +701,9 @@
   }
 
   // ---- presets / import / export ---------------------------------------------------------
-  /** Replace the whole workflow as ONE undo entry. Graph.load() resets history,
-   *  so when the engine exposes _loadInto we load inside a batch + commit. */
+  /** Replace the whole workflow as ONE undo entry. */
   function loadUndoable(json, label) {
-    const g = st.graph;
-    if (typeof g._loadInto === "function") {
-      g.batch(() => { g._loadInto(json, { resetWarnings: true }); g.history.commit(label); }, label);
-    } else {
-      g.load(json);
-    }
+    st.graph.load(json, { history: true, label });
   }
   function replaceGraph(json, text) {
     stopReplay();

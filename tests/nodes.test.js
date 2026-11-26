@@ -219,6 +219,12 @@ async function pure() {
     assert.equal(by.n3.change, "removed");
     assert.equal(by.n9.change, "added");
     assert.ok(SG.runs.diff(a, a).every(x => x.change === "same"));
+    // Same id, different node type (runs of two different presets): removed + added, not "changed".
+    const snap3 = JSON.parse(JSON.stringify(snap1));
+    snap3.nodes[1].type = "core/note";
+    const c = SG.runs.record({ runId: 3, status: "ok", order: ["n1", "n2", "n3"], snapshot: snap3, results: r1.results }, { agent: "research", at: "t" });
+    const rowsN2 = SG.runs.diff(a, c).filter(x => x.id === "n2").map(x => x.change);
+    assert.deepEqual(rowsN2, ["removed", "added"]);
     let list = [];
     for (let i = 0; i < 25; i++) list = SG.runs.push(list, SG.runs.record(r1, { agent: "r", at: "t" + i }));
     assert.equal(list.length, 20); assert.equal(list[0].at, "t24");

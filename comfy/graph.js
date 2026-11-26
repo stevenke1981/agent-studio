@@ -431,7 +431,17 @@
       };
     }
 
-    load(json) {
+    /** load(json) replaces the graph and resets history.
+     *  load(json, {history:true, label}) replaces it as ONE undoable entry instead. */
+    load(json, opts) {
+      if (opts && opts.history) {
+        const self = this;
+        this.batch(function () {
+          self._loadInto(json, { resetWarnings: true });
+          self._batch.reasons.push("load");
+        }, opts.label || "載入流程");
+        return this;
+      }
       this._loadInto(json, { resetWarnings: true });
       this._resetHistory();
       this.emit("change", { reason: "load", ids: [] });

@@ -667,6 +667,25 @@ test("nested batch joins outermost: one change, one history entry", () => {
   assert.strictEqual(g.nodes.length, 0);
 });
 
+test("load(json, {history:true}) is one undoable entry; plain load resets history", () => {
+  const g = new SG.Graph();
+  g.addNode("t/src", {});
+  const before = JSON.stringify(g.toJSON().nodes);
+  const other = new SG.Graph(); other.addNode("t/src", {}); other.addNode("t/src", {});
+  let reasons = [];
+  g.on("change", e => reasons.push(e.reason));
+  g.load(other.toJSON(), { history: true, label: "還原" });
+  assert.strictEqual(g.nodes.length, 2);
+  assert.deepStrictEqual(reasons, ["load"]);
+  assert.ok(g.history.canUndo === true || (typeof g.history.canUndo === "function" && g.history.canUndo()));
+  g.history.undo();
+  assert.strictEqual(JSON.stringify(g.toJSON().nodes), before);
+  g.history.redo();
+  assert.strictEqual(g.nodes.length, 2);
+  g.load(other.toJSON());
+  assert.ok(!(g.history.canUndo === true || (typeof g.history.canUndo === "function" && g.history.canUndo())));
+});
+
 test("setTitle / setCollapsed are undoable; addNode/paste/addGroup/list shapes", () => {
   const g = new SG.Graph();
   const a = g.addNode("t/src", {});

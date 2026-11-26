@@ -67,8 +67,18 @@
     const addId = id => { if (id != null && ids.indexOf(id) < 0) ids.push(id); };
     ((b && b.order) || []).forEach(addId); nodesB.forEach((_, id) => addId(id)); resB.forEach((_, id) => addId(id));
     ((a && a.order) || []).forEach(addId); nodesA.forEach((_, id) => addId(id)); resA.forEach((_, id) => addId(id));
-    return ids.map(id => {
-      const na = nodesA.get(id), nb = nodesB.get(id), ra = resA.get(id), rb = resB.get(id);
+    const rows = [];
+    ids.forEach(id => {
+      const na = nodesA.get(id), nb = nodesB.get(id);
+      // Same id but a different node type (e.g. runs of two different presets): not the
+      // same node, so report it as removed + added instead of a misleading widget diff.
+      if (na && nb && na.type !== nb.type) {
+        rows.push(row(id, na, null, resA.get(id), null));
+        rows.push(row(id, null, nb, null, resB.get(id)));
+      } else rows.push(row(id, na, nb, resA.get(id), resB.get(id)));
+    });
+    return rows;
+    function row(id, na, nb, ra, rb) {
       const inA = Boolean(na || ra), inB = Boolean(nb || rb);
       const wa = (na && na.widgets) || {}, wb = (nb && nb.widgets) || {};
       const names = Object.keys(wa).concat(Object.keys(wb).filter(k => !(k in wa)));
@@ -82,6 +92,6 @@
         statusBefore !== statusAfter || textBefore !== textAfter) change = "changed";
       else change = "same";
       return { id, title: titleOf(nb || na) || id, change, statusBefore, statusAfter, textBefore, textAfter, widgetsChanged };
-    });
+    }
   };
 })(globalThis);
