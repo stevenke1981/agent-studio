@@ -1,7 +1,9 @@
 /* SeaGraph minimap — workstream B.
- * SG.Minimap.mount(canvasApi, hostEl?) -> {el, redraw(), setVisible(bool), destroy()}
+ * SG.Minimap.mount(canvasApi, hostEl?) -> {el, redraw(), resize(), setVisible(bool), visible(), destroy()}
  * Uses the canvas API extras: getView, setView, viewportSize, nodeRects, groupRects, on.
- * Mouse affordance only (keyboard users pan with arrow keys), so it is aria-hidden and not focusable.
+ * Size scales with the canvas viewport (≈14% of its width, 112×70 … 160×100) and follows the
+ * canvas "resize" event. Visibility is owned by the canvas (小地圖 toggle + localStorage).
+ * Pointer affordance only (keyboard users pan with arrow keys), so it is aria-hidden and not focusable.
  */
 (function (root) {
   const SG = root.SeaGraph = root.SeaGraph || {};
@@ -16,20 +18,31 @@
     const doc = host.ownerDocument || root.document;
     const win = doc.defaultView || root;
     const raf = win.requestAnimationFrame ? win.requestAnimationFrame.bind(win) : function (f) { return setTimeout(f, 16); };
-    const W = 200, H = 140;
+    let W = 0, H = 0;
     const el = doc.createElement("canvas");
     el.className = "sg-minimap";
     el.setAttribute("aria-hidden", "true");
     el.title = "小地圖：點擊或拖曳以移動畫面";
     const dpr = Math.max(1, Math.min(3, win.devicePixelRatio || 1));
-    el.width = W * dpr;
-    el.height = H * dpr;
     host.append(el);
     const ctx = el.getContext ? el.getContext("2d") : null;
     let queued = false;
     let map = null; // {minX, minY, s, ox, oy}
     let dragging = false;
     let visible = true;
+
+    function resize() {
+      const vs = api.viewportSize();
+      const w = Math.round(Math.max(112, Math.min(160, (vs.w || 1000) * 0.14)));
+      const h = Math.round(w * 0.625);
+      if (w === W && h === H) return;
+      W = w; H = h;
+      el.style.width = W + "px";
+      el.style.height = H + "px";
+      el.width = Math.round(W * dpr);
+      el.height = Math.round(H * dpr);
+      redraw();
+    }
 
     function worldViewRect() {
       const v = api.getView(), vs = api.viewportSize();
@@ -103,6 +116,8 @@
     el.addEventListener("dblclick", function (e) { e.stopPropagation(); });
 
     const offs = ["view", "render", "move", "select", "state"].map(function (evt) { return api.on(evt, redraw); });
+    offs.push(api.on("resize", resize));
+    resize();
     offs.push(api.on("destroy", function () { destroy(); }));
     redraw();
 
@@ -113,7 +128,9 @@
     return {
       el: el,
       redraw: redraw,
-      setVisible: function (v) { visible = !!v; el.hidden = !visible; if (visible) redraw(); },
+      resize: resize,
+      setVisible: function (v) { visible = !!v; el.hidden = !visible; if (visible) { resize(); redraw(); } },
+      visible: function () { return visible; },
       destroy: destroy
     };
   }

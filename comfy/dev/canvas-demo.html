@@ -31,11 +31,12 @@
   <button id="add" type="button">新增節點…</button>
   <button id="big" type="button">載入 300 節點壓力測試</button>
   <button id="reset" type="button">重設範例</button>
+  <button id="empty" type="button">清空畫布</button>
   <button class="drag" type="button" draggable="true" data-type="demo/summarize" aria-label="拖曳到畫布加入摘要節點">⠿ 拖曳：摘要</button>
   <button class="drag" type="button" draggable="true" data-type="core/note" aria-label="拖曳到畫布加入備註節點">⠿ 拖曳：備註</button>
   <div id="status" role="status" aria-live="polite"></div>
 </div>
-<div class="help">拖曳輸出到輸入連線，或點輸出再點輸入（Esc 取消）。雙擊空白處搜尋節點；雙擊連線插入轉接點；右鍵或 ⋯ 開啟選單。空白處拖曳＝框選，Alt／空白鍵／中鍵拖曳＝平移，滾輪＝縮放。</div>
+<div class="help">拖曳輸出到輸入連線，或點輸出再點輸入（Esc 取消）。雙擊空白處搜尋節點；雙擊連線插入轉接點；右鍵或 ⋯ 開啟選單。空白處拖曳＝框選，Alt／空白鍵／中鍵拖曳＝平移，滾輪＝縮放。觸控：單指拖曳空白處＝平移，雙指＝縮放。左下角為縮放／適合畫布／小地圖控制。</div>
 <div id="host"></div>
 
 <script src="mock-engine.js"></script>
@@ -72,7 +73,7 @@
         N("n16", "demo/echo", 880, 740, { prefix: "測試：" }, { title: "執行測試", retry: { max: 2, delay: 0 } }),
         N("n17", "core/loop-end", 1160, 760, { mode: "truthy", pattern: "", negate: false }),
         N("n18", "core/note", 1160, 420, { text: "這個區塊示範條件分支：主題包含 Rust 時，研究路線會被略過。" }),
-        N("n19", "mystery/old-node", 1440, 760, { foo: "舊版節點" }, { title: "舊版元件" })
+        N("n19", "mystery/old-node", 40, 1000, { foo: "舊版節點" }, { title: "舊版元件（反向連線示範）" })
       ],
       links: [
         L("l1", "n1", "query", "n2", "query"), L("l2", "n3", "value", "n2", "limit"),
@@ -229,6 +230,7 @@
         }
         await step(id);
         var lines = [title(id) + "：模擬輸出"];
+        if (n.type === "demo/summarize") lines.push("重點一：cargo test 會編譯並執行所有單元測試與整合測試，預設平行執行。", "重點二：#[should_panic] 可驗證預期的 panic。", "重點三：文件測試（doctest）也會一併執行。");
         if (n.type === "demo/search") lines.push("找到 3 筆官方文件", "· The Rust Book", "· Rust by Example", "· rustc 測試指南", "· cargo test 參考", "· 更多…", "· 第 7 行（應可捲動）");
         if (n.type === "demo/report") lines.push("標題：" + n.widgets.title, "真實執行 NOT_RUN");
         canvas.setNodeState(id, { status: i % 5 === 3 ? "cached" : "done", preview: lines.join("\n") });
@@ -256,6 +258,7 @@
   document.getElementById("fit").onclick = function () { canvas.fit(); canvas.focus(); };
   document.getElementById("add").onclick = function () { canvas.openSearch(); };
   document.getElementById("reset").onclick = function () { graph.load(sample()); canvas.clearStates(); say("已重設範例。"); };
+  document.getElementById("empty").onclick = function () { graph.load({ nodes: [], links: [], groups: [], view: { x: 0, y: 0, k: 1 }, next: 1 }); canvas.clearStates(); say("已清空畫布。"); };
   document.getElementById("big").onclick = function () {
     var nodes = [], links = [], types = ["demo/query", "demo/search", "demo/summarize", "demo/report"];
     for (var i = 0; i < 300; i++) {
