@@ -261,11 +261,40 @@
       }
     };
   }
-  function nestedWorkflow(json, depth) {
+  function nestedWorkflow(json, depth, ancestors) {
     const copy = JSON.parse(JSON.stringify(json));
-    for (const n of copy.nodes || []) if (typeof n.type === "string" && n.type.indexOf("agent/") === 0) n.props = Object.assign({}, n.props, { depth });
+    for (const n of copy.nodes || []) if (typeof n.type === "string" && n.type.indexOf("agent/") === 0) n.props = Object.assign({}, n.props, { depth, ancestors });
     return copy;
   }
+
+  /** Static checks across sub-agent workflows: self/cyclic references and permission issues
+   *  inside nested workflows, attributed to the top-level agent node that pulls them in. */
+  N.subflowIssues = function subflowIssues(graph, profiles, opts) {
+    const S = bound || SG;
+    const out = [];
+    const load = typeof N.loadWorkflow === "function" ? N.loadWorkflow : null;
+    const top = graph && graph.agent ? [graph.agent] : [];
+    function walk(g, chain, depth, rootId) {
+      for (const n of (g && g.nodes) || []) {
+        if (typeof n.type !== "string" || n.type.indexOf("agent/") !== 0) continue;
+        const aid = n.type.slice(6), at = rootId || n.id;
+        if (chain.indexOf(aid) >= 0) {
+          out.push({ level: "error", nodeId: at, message: "子流程循環引用：" + chain.concat(aid).join(" → ") + "（會無限遞迴）" });
+          continue;
+        }
+        if (!load || !S.Graph || depth >= N.maxDepth) continue;
+        const json = load(aid);
+        if (!json || !(json.nodes || []).length) continue;
+        let sub;
+        try { sub = new S.Graph(json); } catch (e) { continue; }
+        for (const i of N.permissionIssues(sub, profiles, opts))
+          out.push({ level: i.level, nodeId: at, message: "子流程「" + aid + "」：" + i.message });
+        walk(sub, chain.concat(aid), depth + 1, at);
+      }
+    }
+    walk(graph, top, 0, null);
+    return out;
+  };
   function agentDef(agent) {
     const id = agent.id, name = agent.name || id;
     return {
@@ -287,7 +316,12 @@
         const S = bound || SG;
         const me = nodeId(ctx);
         const props = (ctx && ctx.node && ctx.node.props) || {};
-        const depth = Number(ctx && ctx.depth != null ? ctx.depth : props.depth) || 0;
+        // ctx.depth comes from the executor (0 at top level); props.depth/ancestors are stamped
+        // onto agent nodes of nested workflows. Take the larger so the guard can't be bypassed.
+        const depth = Math.max(Number(ctx && ctx.depth) || 0, Number(props.depth) || 0);
+        const topAgent = ctx && ctx.graph && ctx.graph.agent;
+        const ancestors = Array.isArray(props.ancestors) ? props.ancestors : (topAgent ? [topAgent] : []);
+        if (ancestors.indexOf(id) >= 0) throw new Error("子流程循環引用：" + ancestors.concat(id).join(" → ") + "（已停止）");
         const task = widget(inputs, ctx, "task", "").trim();
         const used = [];
         if (inputs.skill) used.push("Skill " + (inputs.skill.skillId || str(inputs.skill)));
@@ -300,12 +334,21 @@
         let text;
         const json = typeof N.loadWorkflow === "function" && S.Graph && S.Executor ? N.loadWorkflow(id) : null;
         if (json && depth < N.maxDepth && (json.nodes || []).length) {
-          const g = new S.Graph(nestedWorkflow(json, depth + 1));
-          const ex = new S.Executor(g, { registry: S.registry, delay: () => Promise.resolve() });
+          const g = new S.Graph(nestedWorkflow(json, depth + 1, ancestors.concat(id)));
+          const ex = new S.Executor(g, { registry: S.registry, depth: depth + 1, delay: () => Promise.resolve() });
           const onAbort = () => { try { ex.cancel(); } catch (e) { /* ignore */ } };
           if (ctx && ctx.signal && ctx.signal.addEventListener) ctx.signal.addEventListener("abort", onAbort, { once: true });
           let done = 0;
           if (ex.on) ex.on("node-done", () => { done++; progress(ctx, 0.2 + 0.7 * Math.min(1, done / Math.max(1, g.nodes.length)), "子流程 " + done + "/" + g.nodes.length); });
+          // Approval gates inside the sub-workflow surface as an approval on THIS node,
+          // so the parent run panel / canvas can answer them (otherwise the run hangs).
+          if (ex.on) ex.on("node-wait", e => {
+            if (!ctx || typeof ctx.requestApproval !== "function") { ex.approve(e.id, false, "上層流程無法核准"); return; }
+            const title = (g.getNode(e.id) && g.getNode(e.id).title) || e.id;
+            ctx.requestApproval({ message: "子流程「" + name + "」· " + title + "：" + e.message,
+              details: Object.assign({ agentId: id, nodeId: e.id }, e.details || {}) })
+              .then(ok => ex.approve(e.id, ok, ctx.approvalNote), () => { /* aborted: onAbort cancels nested run */ });
+          });
           let res;
           try { res = await ex.queue({ targets: g.nodes.map(n => n.id) }); }
           finally { if (ctx && ctx.signal && ctx.signal.removeEventListener) ctx.signal.removeEventListener("abort", onAbort); }

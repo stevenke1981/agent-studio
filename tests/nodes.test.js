@@ -324,6 +324,66 @@ async function engine() {
     assert.match(ra.outputs.artifact.text, /子流程完成 3\/3/);
     SG.nodes.loadWorkflow = null;
   });
+
+  const emptyWf = agent => ({ schema: "sea-agent-studio/workflow", version: 1, agent, nodes: [], links: [], groups: [], view: { x: 0, y: 0, k: 1 }, next: 1 });
+
+  await test("sub-agent: self-reference stops (no unbounded recursion) and is a static error", async () => {
+    const profiles = new Map([["loopy", { id: "loopy", name: "自我引用" }]]);
+    SG.nodes.syncCatalog({ profiles, skills: new Map(), tools: new Map() });
+    const wf = emptyWf("loopy");
+    const g0 = new SG.Graph(wf); g0.addNode("agent/loopy", { x: 0, y: 0 });
+    const saved = g0.toJSON();
+    let loads = 0;
+    SG.nodes.loadWorkflow = id => { loads++; return id === "loopy" ? saved : null; };
+    const static1 = SG.nodes.subflowIssues(new SG.Graph(saved), profiles);
+    assert.equal(static1.length, 1); assert.match(static1[0].message, /循環引用：loopy → loopy/);
+    // Also guard the run itself, even when the top graph's agent is unknown.
+    const g = new SG.Graph(emptyWf(null)); const a = g.addNode("agent/loopy", { x: 0, y: 0 });
+    const res = await new SG.Executor(g, { registry: SG.registry, delay: fast }).queue({ targets: [a.id] });
+    const r = res.results.find(x => x.id === a.id);
+    assert.equal(r.status, "error"); assert.match(r.text, /循環引用/);
+    assert.ok(loads <= 3, "recursion bounded, loads=" + loads);
+    SG.nodes.loadWorkflow = null;
+  });
+
+  await test("sub-agent: approval gate inside nested workflow surfaces on parent and resumes", async () => {
+    const profiles = new Map([["gated", { id: "gated", name: "有關卡" }]]);
+    SG.nodes.syncCatalog({ profiles, skills: new Map(), tools: new Map() });
+    const inner = new SG.Graph(emptyWf("gated"));
+    const p = inner.addNode("core/primitive-string", { x: 0, y: 0 });
+    const gate = inner.addNode("core/approval", { x: 200, y: 0, widgets: { message: "要繼續嗎", auto: false } });
+    const out = inner.addNode("core/preview", { x: 400, y: 0 });
+    assert.ok(inner.connect(p.id, inner.slots(p.id).outputs[0].name, gate.id, "value"));
+    assert.ok(inner.connect(gate.id, "value", out.id, "value"));
+    const innerJson = inner.toJSON();
+    SG.nodes.loadWorkflow = id => (id === "gated" ? innerJson : null);
+    const g = new SG.Graph(emptyWf("parent")); const a = g.addNode("agent/gated", { x: 0, y: 0 });
+    const ex = new SG.Executor(g, { registry: SG.registry, delay: fast });
+    const waits = [];
+    ex.on("node-wait", e => { waits.push(e); setTimeout(() => ex.approve(e.id, true), 0); });
+    const res = await Promise.race([ex.queue({ targets: [a.id] }), new Promise(r => setTimeout(() => r("timeout"), 3000))]);
+    assert.notEqual(res, "timeout", "nested approval must not hang");
+    assert.equal(waits.length, 1); assert.equal(waits[0].id, a.id); assert.match(waits[0].message, /子流程「有關卡」/);
+    assert.equal(res.results.find(x => x.id === a.id).status, "done");
+    SG.nodes.loadWorkflow = null;
+  });
+
+  await test("sub-agent: permission issues inside nested workflows are reported on the parent node", () => {
+    const profiles = new Map([["reader", { id: "reader", name: "唯讀", tool_refs: [{ id: "file-access", operations: ["read"] }] }],
+      ["outer", { id: "outer", name: "外層" }]]);
+    SG.nodes.syncCatalog({ profiles, skills: new Map(),
+      tools: new Map([["file-access", { id: "file-access", name: "檔案存取", operations: ["read", "write"] }]]) });
+    const inner = new SG.Graph(emptyWf("outer"));
+    const t = inner.addNode("tool/file-access", { x: 0, y: 0, widgets: { operation: "寫入檔案" } });
+    const r = inner.addNode("agent/reader", { x: 300, y: 0 });
+    assert.ok(inner.connect(t.id, "tool", r.id, "tool"));
+    const innerJson = inner.toJSON();
+    SG.nodes.loadWorkflow = id => (id === "outer" ? innerJson : null);
+    const top = new SG.Graph(emptyWf("main")); const a = top.addNode("agent/outer", { x: 0, y: 0 });
+    const issues = SG.nodes.subflowIssues(top, profiles);
+    assert.ok(issues.some(i => i.level === "error" && i.nodeId === a.id && /子流程「outer」/.test(i.message)), JSON.stringify(issues));
+    SG.nodes.loadWorkflow = null;
+  });
 }
 
 (async () => {

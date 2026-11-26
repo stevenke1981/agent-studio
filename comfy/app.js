@@ -210,8 +210,10 @@
   function collectIssues() {
     let v = [];
     try { v = st.graph.validate() || []; } catch (e) { v = [{ level: "error", message: "驗證失敗：" + e.message }]; }
-    const p = SG.nodes.permissionIssues(st.graph, S.profiles, { configurationCheck: S.configurationCheck }).map(i => Object.assign({ perm: true }, i));
-    return v.concat(p);
+    const opts = { configurationCheck: S.configurationCheck };
+    const p = SG.nodes.permissionIssues(st.graph, S.profiles, opts).map(i => Object.assign({ perm: true }, i));
+    const sub = SG.nodes.subflowIssues(st.graph, S.profiles, opts).map(i => Object.assign({ perm: true }, i));
+    return v.concat(p, sub);
   }
   function renderIssues(issues) {
     const area = $("run-issues"); area.replaceChildren();
