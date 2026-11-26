@@ -52,6 +52,33 @@
 #assembly-scale{min-width:42px;text-align:center;color:var(--muted);font:.82rem ui-monospace,monospace}
 @media(max-width:600px){#assembly-viewport{height:max(358px,calc(100dvh - 254px))}.assembly-footer{font-size:.77rem}}
 
+/* Workstream C: home/list rows (status, secondary flow button, empty states, mobile layout) */
+.agent-row{grid-template-columns:minmax(0,1fr) 8.5rem 10.5rem;grid-template-areas:"info state actions"}
+.list-head{grid-template-columns:minmax(0,1fr) 8.5rem 10.5rem}
+.agent-row>.agent-info{grid-area:info;min-width:0}
+.agent-row>.agent-state{grid-area:state;display:block;min-width:0;white-space:normal}
+.agent-state>span{white-space:nowrap}
+.agent-row>.row-actions,.agent-row>.configure{grid-area:actions}
+.row-actions{display:flex;align-items:center;justify-self:end;gap:8px;flex-wrap:nowrap}
+.row-actions .configure{white-space:nowrap}
+.agent-run{display:block;font-size:.78rem;color:var(--muted)}
+.agent-row .agent-info strong,.agent-row .agent-info small{overflow-wrap:anywhere}
+.flow-open{color:#344e60;border-color:#b9c7d6;background:#f3f6f9}
+.home-heading .actions{min-width:0}
+@media(max-width:600px){
+  .list-head{display:none}
+  .agent-row{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"info actions" "state actions";row-gap:4px;padding-inline:10px}
+  .agent-row>.agent-state{padding-left:32px;flex-direction:row;flex-wrap:wrap;column-gap:8px;align-items:baseline}
+  .agent-run{display:inline}
+  .agent-row>.agent-info{align-self:start}
+  .agent-row>.row-actions,.agent-row>.configure{align-self:center}
+  .row-actions{gap:6px}
+  .row-actions .configure{padding:4px 8px;font-size:.8rem}
+  .home-heading{align-items:stretch}
+  .home-heading .actions{width:100%}
+  .home-heading .actions>button{flex:1 1 auto;white-space:nowrap}
+  .home-heading .actions>.primary{order:-1}
+}
 </style>
 <link rel="stylesheet" href="comfy/canvas.css">
 <link rel="stylesheet" href="comfy/app.css">
@@ -170,25 +197,29 @@
 </section>
 </main>
 <main id="editor" class="editor" hidden>
-<div class="worktop"><div class="location"><button id="back" type="button">← Agent 設定</button><span class="divider"></span><div><span class="caption">流程設定</span><h1 id="editor-title"></h1></div></div><div class="actions" aria-label="畫布工具">
-<button id="library-toggle" type="button" aria-expanded="false" aria-controls="library">＋ 功能庫</button>
-<button id="props-toggle" type="button" aria-expanded="false" aria-controls="inspector" disabled>節點設定</button>
-<button id="history-toggle" type="button" aria-expanded="false" aria-controls="history">執行紀錄</button>
-<button id="options-toggle" type="button" aria-expanded="false" aria-controls="options">更多</button>
-<button id="shortcuts" type="button" aria-haspopup="dialog" aria-controls="shortcut-help">快捷鍵</button>
-<button id="estimate" type="button" aria-controls="run-panel" title="不執行，只估算 tokens、時間與是否寫入">試算</button>
-<button id="cancel-run" type="button" disabled aria-label="取消執行">■ 取消</button>
-<button id="run" type="button" aria-controls="run-panel" aria-expanded="false" class="primary">▷ 執行</button></div></div>
+<div class="worktop"><div class="location"><button id="back" type="button">← Agent 設定</button><span class="divider"></span><div><span class="caption">流程設定</span><h1 id="editor-title"></h1></div></div><div class="actions sga-bar" role="toolbar" aria-label="畫布工具">
+<div class="sga-group sga-panels">
+<button id="library-toggle" type="button" aria-expanded="false" aria-controls="library">＋ <span>功能庫</span></button>
+<button id="props-toggle" type="button" class="sga-wide-only" aria-expanded="false" aria-controls="inspector" disabled>節點設定</button>
+<button id="history-toggle" type="button" class="sga-wide-only" aria-expanded="false" aria-controls="history">執行紀錄</button>
+<button id="options-toggle" type="button" aria-expanded="false" aria-controls="options" aria-label="更多"><span class="sga-more-long">更多</span><span class="sga-more-short" aria-hidden="true">⋯</span></button>
+</div>
+<span class="sga-sep" aria-hidden="true"></span>
+<div class="sga-group sga-run-group">
+<button id="estimate" type="button" class="sga-wide-only" aria-controls="run-panel" title="不執行，只估算 tokens、時間與是否寫入">試算</button>
+<button id="run" type="button" aria-controls="run-panel" aria-expanded="false" class="primary">▷ 執行</button>
+<button id="cancel-run" type="button" class="sga-cancel" hidden aria-label="取消執行">■ 取消</button>
+</div></div></div>
 <section class="canvas" aria-label="接線區">
-<div class="helper"><span>雙擊空白處搜尋節點 · 從輸出拖線到輸入</span><span>也可依序點兩個接點 · Ctrl+Enter 執行</span></div>
+<div class="helper"><span><span class="sga-h-long">雙擊空白處搜尋節點 · 從輸出拖線到輸入</span><span class="sga-h-short">雙擊空白處搜尋節點</span></span><span class="sga-h-long">也可依序點兩個接點 · Ctrl+Enter 執行</span></div>
 <div id="flow-host" class="sga-host" aria-label="流程畫布"><p class="sga-fallback">流程引擎載入中…</p></div>
-<aside id="library" class="drawer library" hidden aria-labelledby="library-title"><div class="drawer-head"><div><h2 id="library-title">功能庫</h2><p>點一下加入、拖到畫布，或重用已儲存的 Agent。</p></div><button type="button" data-close="library-toggle" aria-label="關閉功能庫">×</button></div><div id="reuse-agents"></div><label for="palette-filter">搜尋節點</label><input id="palette-filter" type="search" autocomplete="off" placeholder="例：查詢、Rust、核准"><div id="palette"></div></aside>
+<aside id="library" class="drawer library" hidden aria-labelledby="library-title"><div class="drawer-head"><div><h2 id="library-title">功能庫</h2><p>點一下加入、拖到畫布，或重用已儲存的 Agent。</p></div><button type="button" data-close="library-toggle" aria-label="關閉功能庫">×</button></div><div class="sga-sticky"><label for="palette-filter">搜尋節點</label><input id="palette-filter" type="search" autocomplete="off" placeholder="例：查詢、Rust、核准"></div><div id="reuse-agents"></div><div id="palette"></div></aside>
 <aside id="inspector" class="drawer right" hidden aria-labelledby="inspector-title"><div class="drawer-head"><h2 id="inspector-title">節點設定</h2><button type="button" data-close="props-toggle" aria-label="關閉節點設定">×</button></div><section id="props"></section></aside>
 <aside id="history" class="drawer right sga-wide" hidden aria-labelledby="history-title"><div class="drawer-head"><div><h2 id="history-title">執行紀錄</h2><p>保留最近 20 次。勾選兩筆即可比較。</p></div><button type="button" data-close="history-toggle" aria-label="關閉執行紀錄">×</button></div><div id="history-list"></div><div id="history-diff"></div></aside>
-<aside id="options" class="drawer right" hidden aria-labelledby="options-title"><div class="drawer-head"><h2 id="options-title">畫布工具</h2><button type="button" data-close="options-toggle" aria-label="關閉畫布工具">×</button></div><label for="preset">流程範例</label><select id="preset"><option value="rust">搜尋 → Rust</option><option value="research">搜尋與引用</option><option value="go">Go 編譯與測試</option><option value="java">Java 編譯與測試</option><option value="empty">空白畫布</option><optgroup label="流程控制"><option value="branch">條件分支</option><option value="fix-loop">修正直到通過</option><option value="retry">重試示範</option></optgroup></select><button id="load" type="button">載入</button> <button id="json" type="button">匯出 JSON</button> <button id="import-flow" type="button">匯入 JSON</button><input id="flow-file" type="file" accept=".json,application/json" hidden><p class="sub sga-note">也可把 .json 拖到畫布上匯入。支援新版流程、v0.5 流程與 v0.5 匯出檔。</p><button id="fit-view" type="button">適合畫布</button></aside>
-<aside id="run-panel" class="drawer right sga-wide" hidden aria-labelledby="run-title"><div class="drawer-head"><div><h2 id="run-title">執行結果</h2><p>使用範例資料，不呼叫模型或編譯器。</p></div><button type="button" data-close="run" aria-label="關閉執行結果">×</button></div><p id="run-queue" class="sub" role="status"></p><div id="approvals"></div><div id="estimate-box"></div><div id="run-issues"></div><div id="preflight"></div><div id="results"></div></aside>
+<aside id="options" class="drawer right" hidden aria-labelledby="options-title"><div class="drawer-head"><h2 id="options-title">畫布工具</h2><button type="button" data-close="options-toggle" aria-label="關閉畫布工具">×</button></div><div class="sga-narrow-only sga-opt-panels" role="group" aria-label="面板"><button id="opt-props" type="button">節點設定</button><button id="opt-history" type="button">執行紀錄</button><button id="opt-estimate" type="button">試算</button></div><label for="preset">流程範例</label><select id="preset"><option value="rust">搜尋 → Rust</option><option value="research">搜尋與引用</option><option value="go">Go 編譯與測試</option><option value="java">Java 編譯與測試</option><option value="empty">空白畫布</option><optgroup label="流程控制"><option value="branch">條件分支</option><option value="fix-loop">修正直到通過</option><option value="retry">重試示範</option></optgroup></select><button id="load" type="button">載入</button> <button id="json" type="button">匯出 JSON</button> <button id="import-flow" type="button">匯入 JSON</button><input id="flow-file" type="file" accept=".json,application/json" hidden><p class="sub sga-note">也可把 .json 拖到畫布上匯入。支援新版流程、v0.5 流程與 v0.5 匯出檔。</p><button id="fit-view" type="button">適合畫布</button> <button id="shortcuts" type="button" aria-haspopup="dialog" aria-controls="shortcut-help">快捷鍵</button></aside>
+<aside id="run-panel" class="drawer right sga-wide" hidden aria-labelledby="run-title"><div class="drawer-head"><div><h2 id="run-title">執行結果</h2><p>使用範例資料，不呼叫模型或編譯器。</p></div><button type="button" data-close="run" aria-label="關閉執行結果">×</button></div><p id="run-queue" class="sub" role="status"></p><div id="approvals"></div><div id="estimate-box"></div><div id="run-issues"></div><div id="preflight"></div><div id="results" aria-live="polite"></div></aside>
 </section>
-<div class="event"><strong>狀態</strong><span id="status" role="status">就緒。</span></div>
+<div class="event"><strong>狀態</strong><span id="status" role="status">就緒。</span><span id="run-progress" class="sga-prog" hidden></span><span id="save-state" class="sga-save" title="流程會自動儲存在這個瀏覽器"></span></div>
 <dialog id="shortcut-help" class="sga-dialog" aria-labelledby="shortcut-title"><h2 id="shortcut-title">快捷鍵</h2><table class="sga-keys"><tbody>
 <tr><th scope="row">Ctrl+Enter</th><td>執行流程</td></tr>
 <tr><th scope="row">雙擊空白處</th><td>搜尋並加入節點</td></tr>
@@ -386,14 +417,24 @@ function restoreProfiles(){
 function newId(){return "custom-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,10);}
 function renderHome(focusId){
   $("agent-list").replaceChildren();
+  const readJSON=key=>{try{return JSON.parse(localStorage.getItem(key));}catch{return null;}};
+  const runLabel={ok:"完成",error:"失敗",cancelled:"已取消"};
+  if(!profiles.size)$("agent-list").append(make("p","還沒有 Agent。按上方「＋ 新增 Agent」建立第一個。","sub"));
   for(const agent of profiles.values()){
     const row=make("article",null,"agent-row"),info=make("div",null,"agent-info");
     const icon=make("span",agent.icon||"Ag","agent-icon");icon.setAttribute("aria-hidden","true");
     const details=make("div");details.append(make("strong",agent.name),make("small",agent.role||agent.capabilities.length+" 項能力"));
     info.append(icon,details);
-    const state=make("span",completed.get(agent.id)||(agent.id.startsWith("custom-")?"已儲存":"範例"),"agent-state");state.dataset.agentState=agent.id;
+    const flow=readJSON("sea-agent-studio-v06.flow."+agent.id),runs=readJSON("sea-agent-studio-v06.runs."+agent.id);
+    const nodeCount=flow&&Array.isArray(flow.nodes)?flow.nodes.length:0;
+    const latest=Array.isArray(runs)?runs.filter(r=>r&&typeof r==="object").sort((a,b)=>String(b.at).localeCompare(String(a.at)))[0]:null;
+    const state=make("span",null,"agent-state");state.dataset.agentState=agent.id;
+    state.append(make("span",nodeCount?nodeCount+" 個節點":(completed.get(agent.id)||(agent.id.startsWith("custom-")?"已儲存":"範例"))));
+    state.append(make("span",latest?"上次執行："+(runLabel[latest.status]||latest.status||"完成"):"尚未執行","agent-run"));
+    const flowButton=action("流程 →",()=>openFlow(agent.id),"configure flow-open");flowButton.setAttribute("aria-label","開啟 "+agent.name+" 的流程");
     const button=action("設定 →",()=>openProfile(agent.id),"configure");button.dataset.configure=agent.id;button.setAttribute("aria-label","設定 "+agent.name);
-    row.append(info,state,button);$("agent-list").append(row);
+    const actions=make("div",null,"row-actions");actions.append(flowButton,button);
+    row.append(info,state,actions);$("agent-list").append(row);
   }
   if(focusId)$("agent-list").querySelector('[data-configure="'+focusId+'"]')?.focus();
 }
@@ -487,15 +528,17 @@ $("profile-file").onchange=async e=>{
 };
 // Reuse-agent insertion and the node graph are handled by SeaGraph.App (comfy/app.js).
 const flowApp=()=>globalThis.SeaGraph&&globalThis.SeaGraph.App&&globalThis.SeaGraph.App.ready?globalThis.SeaGraph.App:null;
-$("open-flow").onclick=()=>{
-  const agent=profiles.get(profileId);
+function openFlow(agentId){
+  const agent=profiles.get(agentId);
+  if(!agent)return;
   active=agent.id;
   $("editor-title").textContent=agent.name;
   showPage("editor");showPanel(null);
   const app=flowApp();
   if(app)app.open(active);else status("流程引擎未載入（comfy/*.js），無法開啟節點畫布。");
   $("back").focus();
-};
+}
+$("open-flow").onclick=()=>openFlow(profileId);
 $("back").onclick=()=>{
   showPanel(null);flowApp()?.close();openProfile(active);active=null;$("open-flow").focus();
 };
@@ -542,7 +585,7 @@ function restoreSkills(){
 }
 function renderSkills(){
   const list=$("skill-list");list.replaceChildren();
-  if(!skills.size){list.append(make("p","還沒有技能。建立一份，或匯入現有的 SKILL.md。","sub"));return;}
+  if(!skills.size){list.append(make("p","還沒有 Skill。按上方「＋ 新增 Skill」建立第一個，或匯入現有的 SKILL.md。","sub"));return;}
   for(const skill of skills.values()){
     const row=make("article",null,"agent-row"),info=make("div",null,"agent-info"),labels=make("div");
     labels.append(make("strong",skill.id),make("small",skill.description));info.append(make("span","Sk","agent-icon"),labels);
@@ -662,6 +705,7 @@ function storeTools(){
 }
 function renderTools(){
   const list=$("tool-list");list.replaceChildren();
+  if(!toolsCatalog.size)list.append(make("p","還沒有 Tool。按上方「＋ 新增 Tool」建立第一個。","sub"));
   for(const tool of toolsCatalog.values()){
     const row=make("article",null,"agent-row"),info=make("div",null,"agent-info"),labels=make("div");
     labels.append(make("strong",tool.name),make("small",tool.id+" · "+tool.operations.map(op=>toolOps[op]).join("、")));

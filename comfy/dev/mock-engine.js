@@ -89,7 +89,8 @@
       outputs: [{ name: "report", type: "REPORT", label: "報告" }],
       widgets: [
         { name: "title", kind: "text", label: "標題", default: "研究交接" },
-        { name: "include", kind: "toggle", label: "附來源", default: true }
+        { name: "path", kind: "text", label: "輸出路徑（示範，不會寫入）", default: "docs/handoff.md" },
+        { name: "include", kind: "toggle", label: "附上來源清單與引用（模擬）", default: true }
       ] },
     { type: "core/reroute", title: "轉接點", category: "核心", hint: "整理連線", virtual: true,
       inputs: [{ name: "value", type: "*", label: "值" }], outputs: [{ name: "value", type: "*", label: "值" }], widgets: [] },

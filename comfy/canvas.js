@@ -12,6 +12,8 @@
   const MAX_K = 2.5;
   const NODE_W = 220;
   const GRID = 20;
+  const MINIMAP_KEY = "sea-agent-studio-v06.ui.minimap"; // "1" / "0"; absent = auto by host width
+  const MINIMAP_MIN_W = 700;                             // auto mode hides the minimap below this host width
   const GROUP_COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#a855f7", "#ef4444", "#14b8a6"];
   const DEFAULT_LABELS = {
     canvas: "節點畫布",
@@ -19,7 +21,11 @@
     input: "輸入",
     output: "輸出",
     missing: "缺少節點類型",
-    empty: "雙擊畫布或按 / 搜尋節點，也可以從元件庫拖曳加入。",
+    emptyTitle: "畫布是空的",
+    empty: "雙擊空白處或按下方按鈕搜尋節點",
+    emptyReadOnly: "這個流程目前沒有任何節點。",
+    emptyAction: "搜尋節點",
+    controls: "畫布檢視控制",
     menu: "節點選單",
     preview: "預覽",
     group: "群組"
@@ -44,6 +50,45 @@
     return "M" + r1(a.x) + "," + r1(a.y) + " C" + r1(a.x + dx) + "," + r1(a.y) + " " +
       r1(b.x - dx) + "," + r1(b.y) + " " + r1(b.x) + "," + r1(b.y);
   }
+  // Polyline with rounded corners (quadratic joins), used for backward wires.
+  function roundedPath(pts, R) {
+    let d = "M" + r1(pts[0].x) + "," + r1(pts[0].y);
+    for (let i = 1; i < pts.length - 1; i++) {
+      const p0 = pts[i - 1], p = pts[i], p1 = pts[i + 1];
+      const l0 = Math.hypot(p.x - p0.x, p.y - p0.y), l1 = Math.hypot(p1.x - p.x, p1.y - p.y);
+      const r = Math.min(R, l0 / 2, l1 / 2);
+      if (r < 0.5) { d += " L" + r1(p.x) + "," + r1(p.y); continue; }
+      const ax = p.x + (p0.x - p.x) / l0 * r, ay = p.y + (p0.y - p.y) / l0 * r;
+      const bx = p.x + (p1.x - p.x) / l1 * r, by = p.y + (p1.y - p.y) / l1 * r;
+      d += " L" + r1(ax) + "," + r1(ay) + " Q" + r1(p.x) + "," + r1(p.y) + " " + r1(bx) + "," + r1(by);
+    }
+    const last = pts[pts.length - 1];
+    return d + " L" + r1(last.x) + "," + r1(last.y);
+  }
+  // Backward link (target left of source): exit right, run through the gap between the two
+  // node rows (or below both when they share a row), enter the target from the left.
+  // sa / sb are the source / target node boxes {x,y,w,h} in world units.
+  function backRoute(a, b, sa, sb) {
+    const o = clamp(Math.hypot(a.x - b.x, a.y - b.y) * 0.05, 18, 36);
+    const sTop = sa.y, sBot = sa.y + sa.h, tTop = sb.y, tBot = sb.y + sb.h;
+    let midY;
+    if (tTop - sBot >= 16) midY = (sBot + tTop) / 2;
+    else if (sTop - tBot >= 16) midY = (tBot + sTop) / 2;
+    else midY = Math.max(sBot, tBot) + o;
+    const x1 = Math.max(a.x, sa.x + sa.w) + o, x2 = Math.min(b.x, sb.x) - o;
+    return roundedPath([a, { x: x1, y: a.y }, { x: x1, y: midY }, { x: x2, y: midY }, { x: x2, y: b.y }, b], 14);
+  }
+  // Rough rendered width (px) of a label at the given font size; CJK / full-width glyphs count as 1em.
+  function textWidth(s, px) {
+    let w = 0;
+    const str = String(s == null ? "" : s);
+    for (let i = 0; i < str.length; i++) {
+      const c = str.charCodeAt(i);
+      w += (c >= 0x2E80 && c <= 0x9FFF) || (c >= 0xAC00 && c <= 0xD7AF) || (c >= 0xF900 && c <= 0xFAFF) || (c >= 0xFF00 && c <= 0xFFEF) ? px : px * 0.6;
+    }
+    return w;
+  }
+  let uidSeq = 0;
   function optValue(o) { return o !== null && typeof o === "object" ? o.value : o; }
   function optLabel(o) { return o !== null && typeof o === "object" ? (o.label != null ? o.label : String(o.value)) : String(o); }
 
@@ -89,9 +134,38 @@
     world.append(loopsLayer, groupsLayer, wiresSvg, nodesLayer);
     const boxEl = mk("div", "sg-box");
     boxEl.hidden = true;
-    const emptyEl = mk("div", "sg-empty", { "aria-hidden": "true" }, labels.empty);
-    const zoomEl = mk("div", "sg-zoom", { "aria-hidden": "true" }, "100%");
-    rootEl.append(world, boxEl, emptyEl, zoomEl);
+    const uid = "sg" + (++uidSeq);
+
+    // empty-state card (shown only while the graph has no nodes)
+    const emptyEl = mk("div", "sg-empty", { role: "group", "aria-labelledby": uid + "-empty-t" });
+    const emptyBtn = mk("button", "sg-empty-btn", { type: "button" }, labels.emptyAction);
+    emptyEl.append(
+      mk("p", "sg-empty-title", { id: uid + "-empty-t" }, labels.emptyTitle),
+      mk("p", "sg-empty-hint", null, readOnly ? labels.emptyReadOnly : labels.empty)
+    );
+    if (!readOnly) emptyEl.append(emptyBtn);
+    emptyEl.hidden = true;
+
+    // floating view controls (bottom-left)
+    function icon(d) {
+      const s = svg("svg", { viewBox: "0 0 24 24", width: "16", height: "16", "aria-hidden": "true", focusable: "false" });
+      s.append(svg("path", { d: d, fill: "none", stroke: "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round" }));
+      return s;
+    }
+    function ctlBtn(cls, label, iconPath, extra) {
+      const b = mk("button", "sg-ctl " + cls, Object.assign({ type: "button", "aria-label": label, title: label }, extra || {}));
+      if (iconPath) b.append(icon(iconPath));
+      return b;
+    }
+    const controls = mk("div", "sg-controls", { role: "toolbar", "aria-label": labels.controls });
+    const zoomOutBtn = ctlBtn("sg-ctl-out", "縮小", "M6 12h12", { "aria-keyshortcuts": "-" });
+    const zoomBtn = mk("button", "sg-ctl sg-ctl-zoom", { type: "button", "aria-keyshortcuts": "0", title: "重設為 100%" }, "100%");
+    const zoomInBtn = ctlBtn("sg-ctl-in", "放大", "M12 6v12M6 12h12", { "aria-keyshortcuts": "+" });
+    const fitBtn = ctlBtn("sg-ctl-fit", "適合畫布", "M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5", { "aria-keyshortcuts": "F" });
+    const mmBtn = ctlBtn("sg-ctl-mm", "小地圖", "M3 5h18v14H3zM13 12h5v4h-5z", { "aria-pressed": "false" });
+    controls.append(zoomOutBtn, zoomBtn, zoomInBtn, mk("span", "sg-ctl-sep", { "aria-hidden": "true" }), fitBtn, mmBtn);
+
+    rootEl.append(controls, world, boxEl, emptyEl);
     host.append(rootEl);
 
     // ---------- state ----------
@@ -126,6 +200,12 @@
     let snap = Number(opts.snap) || 0;
     const listeners = {};
     let minimap = null;
+    let minimapOn = false;
+    let minimapAuto = true;    // true until the user toggles: follows host width (< 700px → hidden)
+    const touches = new Map(); // touch pointerId -> {x, y} (client)
+    const pvOpen = new Set();  // node ids whose inline preview is expanded
+    let lastPct = -1;
+    let resizeObs = null;
 
     function status(text) { if (opts.onStatus && text) { try { opts.onStatus(text); } catch (e) { /* ignore */ } } }
     function emit(evt, data) { (listeners[evt] || []).slice().forEach(function (fn) { try { fn(data); } catch (e) { /* ignore */ } }); }
@@ -214,7 +294,15 @@
       const g = GRID * view.k;
       rootEl.style.backgroundSize = g + "px " + g + "px";
       rootEl.style.backgroundPosition = view.x + "px " + view.y + "px";
-      zoomEl.textContent = Math.round(view.k * 100) + "%";
+      const pct = Math.round(view.k * 100);
+      if (pct !== lastPct) {
+        lastPct = pct;
+        zoomBtn.textContent = pct + "%";
+        zoomBtn.setAttribute("aria-label", "縮放 " + pct + "%，按下重設為 100%");
+        // aria-disabled (not disabled) so a focused button keeps focus at the zoom limit
+        zoomOutBtn.setAttribute("aria-disabled", view.k <= MIN_K + 1e-6 ? "true" : "false");
+        zoomInBtn.setAttribute("aria-disabled", view.k >= MAX_K - 1e-6 ? "true" : "false");
+      }
       emit("view", getView());
     }
     function getView() { return { x: view.x, y: view.y, k: view.k }; }
@@ -269,13 +357,42 @@
       });
       return x1 === Infinity ? null : { x: x1, y: y1, w: x2 - x1, h: y2 - y1 };
     }
+    // Screen-space insets that fit() keeps free so fitted nodes never sit under the
+    // floating controls (bottom-left) or the minimap (bottom-right). Two candidate layouts
+    // when the minimap is shown (reserve a bottom strip vs. a right column); fit() picks the
+    // one that yields the larger zoom.
+    function fitInsets(W, H) {
+      const pad = W < 520 ? 24 : 40;
+      const ctlH = controls.hidden ? 0 : (controls.offsetHeight || 36) + 10;
+      const base = { l: pad, t: pad, r: pad, b: pad + ctlH };
+      const mm = minimapOn && minimap && minimap.el && !minimap.el.hidden ? minimap.el : null;
+      if (!mm) return [base];
+      const mw = (mm.offsetWidth || 160) + 10, mh = (mm.offsetHeight || 100) + 10;
+      return [
+        { l: pad, t: pad, r: pad, b: pad + Math.max(ctlH, mh) },
+        { l: pad, t: pad, r: pad + mw, b: pad + ctlH }
+      ];
+    }
     function fit() {
       const ids = nodes().map(function (n) { return n.id; });
       const b = bbox(ids);
       if (!b) { setViewLocal({ x: 0, y: 0, k: 1 }); return; }
-      const W = rootEl.clientWidth || 800, H = rootEl.clientHeight || 600, pad = 48;
-      const k = clamp(Math.min((W - pad * 2) / Math.max(b.w, 1), (H - pad * 2) / Math.max(b.h, 1), 1.25), MIN_K, MAX_K);
-      setViewLocal({ x: (W - b.w * k) / 2 - b.x * k, y: (H - b.h * k) / 2 - b.y * k, k: k });
+      // backward wires detour up to ~36 world units outside their nodes; keep them in view too
+      links().forEach(function (l) {
+        const a = anchor(l.from, "out", l.out), t = anchor(l.to, "in", l.in);
+        if (!a || !t || t.x - a.x >= 24) return;
+        const x1 = Math.min(b.x, t.x - 36), x2 = Math.max(b.x + b.w, a.x + 36);
+        b.w = x2 - x1; b.x = x1;
+      });
+      const W = rootEl.clientWidth || 800, H = rootEl.clientHeight || 600;
+      let best = null;
+      fitInsets(W, H).forEach(function (ins) {
+        const aw = Math.max(40, W - ins.l - ins.r), ah = Math.max(40, H - ins.t - ins.b);
+        const k = clamp(Math.min(aw / Math.max(b.w, 1), ah / Math.max(b.h, 1), 1.25), MIN_K, MAX_K);
+        if (!best || k > best.k + 1e-6) best = { k: k, ins: ins, aw: aw, ah: ah };
+      });
+      const k = best.k, ins = best.ins;
+      setViewLocal({ x: ins.l + (best.aw - b.w * k) / 2 - b.x * k, y: ins.t + (best.ah - b.h * k) / 2 - b.y * k, k: k });
     }
     function centerOn(id) {
       const n = getNode(id); if (!n) return;
@@ -487,14 +604,14 @@
           if (a) {
             const b = portBtn(n, a, "in");
             rec.ports.in.set(a.name, b);
-            const lab = mk("span", "sg-slot-label" + (a.optional ? " sg-optional" : ""), null, a.label || a.name);
+            const lab = mk("span", "sg-slot-label" + (a.optional ? " sg-optional" : ""), { title: (a.label || a.name) + (a.optional ? "（選填）" : "") }, a.label || a.name);
             left.append(b, lab);
           }
           const right = mk("div", "sg-slot sg-slot-out");
           if (o) {
             const b = portBtn(n, o, "out");
             rec.ports.out.set(o.name, b);
-            right.append(mk("span", "sg-slot-label", null, o.label || o.name), b);
+            right.append(mk("span", "sg-slot-label", { title: o.label || o.name }, o.label || o.name), b);
           }
           row.append(left, right);
           body.append(row);
@@ -519,12 +636,20 @@
         const apBtns = mk("div", "sg-approval-btns");
         apBtns.append(apYes, apNo);
         approval.append(apMsg, apBtns);
-        const preview = mk("div", "sg-preview", { tabindex: "0", role: "note", "aria-label": labels.preview + "：" + title, "data-focus": "preview" });
-        preview.hidden = true;
+        const pvId = uid + "-pv-" + String(n.id).replace(/[^\w-]/g, "_");
+        const pvWrap = mk("div", "sg-pv");
+        pvWrap.hidden = true;
+        const preview = mk("div", "sg-preview sg-pv-clamp", { id: pvId, tabindex: "0", role: "note", "aria-label": labels.preview + "：" + title, "data-focus": "preview" });
+        const pvToggle = mk("button", "sg-pv-toggle", {
+          type: "button", "data-focus": "pv-toggle", "aria-controls": pvId, "aria-expanded": "false",
+          "aria-label": "展開預覽：" + title
+        }, "展開");
+        pvToggle.hidden = true;
+        pvWrap.append(preview, pvToggle);
         const msg = mk("div", "sg-msg", { role: "note" });
         msg.hidden = true;
-        el.append(approval, preview, msg);
-        Object.assign(rec, { approval: approval, apMsg: apMsg, preview: preview, msg: msg });
+        el.append(approval, pvWrap, msg);
+        Object.assign(rec, { approval: approval, apMsg: apMsg, pvWrap: pvWrap, preview: preview, pvToggle: pvToggle, pvText: null, msg: msg });
       }
       return rec;
     }
@@ -535,8 +660,13 @@
 
     function buildWidget(n, w, rec) {
       const kind = w.kind || "text";
-      const wrap = mk("label", "sg-widget sg-w-" + kind);
-      const lab = mk("span", "sg-wlabel", null, w.label || w.name);
+      const text = w.label || w.name;
+      // Long labels stack above a full-width control instead of being truncated inline.
+      // Toggles keep the switch on the right and let the label wrap.
+      const inner = (n.w || NODE_W) - 18;
+      const stacked = kind === "textarea" || (kind !== "toggle" && textWidth(text, 12) > inner * 0.4);
+      const wrap = mk("label", "sg-widget sg-w-" + kind + (stacked ? " sg-w-stack" : ""));
+      const lab = mk("span", "sg-wlabel", { title: text }, text);
       let ctl;
       if (kind === "textarea") {
         ctl = mk("textarea", "sg-input", { rows: "3", spellcheck: "false" });
@@ -702,8 +832,9 @@
       }
       if (rec.preview) {
         const pv = st.preview != null && st.preview !== "" ? String(st.preview) : null;
-        rec.preview.hidden = pv == null;
+        rec.pvWrap.hidden = pv == null;
         if (pv != null && rec.preview.textContent !== pv) rec.preview.textContent = pv;
+        if (pv !== rec.pvText) { rec.pvText = pv; clampPreview(rec); }
       }
       if (rec.msg) {
         const m = st.message && !branchOff ? String(st.message) : "";
@@ -716,6 +847,34 @@
         rec.approval.hidden = !ap;
         if (ap) rec.apMsg.textContent = ap.message || "請確認是否繼續";
       }
+    }
+
+    // Inline previews are clamped to ~3 lines; a 展開／收合 toggle appears only when the text overflows.
+    function clampPreview(rec) {
+      const pv = rec.preview, tg = rec.pvToggle;
+      if (!pv || rec.pvWrap.hidden) { if (tg) tg.hidden = true; return; }
+      const open = pvOpen.has(rec.id);
+      pv.classList.add("sg-pv-clamp");
+      let over;
+      if (pv.clientHeight > 0) over = pv.scrollHeight > pv.clientHeight + 2;
+      else {
+        const t = pv.textContent || "";
+        over = t.split("\n").length > 3 || textWidth(t, 12) > ((rec.size.w || NODE_W) - 32) * 3;
+      }
+      pv.classList.toggle("sg-pv-clamp", !(open && over));
+      tg.hidden = !over;
+      tg.textContent = open ? "收合" : "展開";
+      tg.setAttribute("aria-expanded", open && over ? "true" : "false");
+      tg.setAttribute("aria-label", (open ? "收合預覽：" : "展開預覽：") + rec.title);
+    }
+    function togglePreview(id) {
+      const rec = nodeEls.get(id);
+      if (!rec || !rec.preview) return;
+      if (pvOpen.has(id)) pvOpen.delete(id); else pvOpen.add(id);
+      clampPreview(rec);
+      measure(rec);
+      scheduleWires();
+      status(pvOpen.has(id) ? "已展開「" + rec.title + "」的預覽。" : "已收合「" + rec.title + "」的預覽。");
     }
 
     function measure(rec) {
@@ -746,6 +905,11 @@
       return { x: p.x + o.x, y: p.y + o.y };
     }
 
+    function nodeBox(id) {
+      const n = getNode(id), p = visualPos(n), s = nodeSize(id);
+      return { x: p.x, y: p.y, w: s.w, h: s.h };
+    }
+
     function drawWires() {
       const seen = new Set();
       links().forEach(function (l) {
@@ -767,7 +931,7 @@
         const s = findSlot(l.from, "out", l.out) || findSlot(l.to, "in", l.in);
         const color = typeInfo(s ? s.type : "*").color;
         if (rec.color !== color) { rec.path.style.stroke = color; rec.color = color; }
-        const d = bez(a, b);
+        const d = b.x - a.x < 24 ? backRoute(a, b, nodeBox(l.from), nodeBox(l.to)) : bez(a, b);
         rec.path.setAttribute("d", d);
         rec.hit.setAttribute("d", d);
         const fromN = getNode(l.from);
@@ -1385,13 +1549,18 @@
       if (destroyed) return;
       usingPointer = true;
       const t = e.target;
-      if (t.closest(".sg-menu, .sg-pop, .sg-minimap, .sg-rename")) return;
+      const isTouch = e.pointerType === "touch";
+      if (isTouch) trackTouch(e);
+      if (t.closest(".sg-menu, .sg-pop, .sg-minimap, .sg-rename, .sg-controls, .sg-empty")) return;
       lastPointer = { cx: e.clientX, cy: e.clientY };
+      // second finger: switch whatever is going on into a pinch-zoom
+      if (isTouch && touches.size >= 2) { startPinch(); return; }
       const empty = isEmptyTarget(t);
-      if (e.button === 1 || (e.button === 0 && (spaceHeld || (e.altKey && empty)))) {
+      // touch: one finger on empty canvas pans (mouse keeps box-select semantics)
+      if (e.button === 1 || (e.button === 0 && (spaceHeld || (e.altKey && empty) || (isTouch && empty && !pending)))) {
         e.preventDefault();
         rootEl.focus({ preventScroll: true });
-        startGesture({ kind: "pan", sx: e.clientX, sy: e.clientY, vx: view.x, vy: view.y });
+        startGesture({ kind: "pan", pid: e.pointerId, sx: e.clientX, sy: e.clientY, vx: view.x, vy: view.y });
         rootEl.classList.add("sg-panning");
         return;
       }
@@ -1403,7 +1572,7 @@
         startGesture({ kind: "port", sx: e.clientX, sy: e.clientY, port: port, info: portInfo(port) });
         return;
       }
-      if (t.closest(".sg-menu-btn, .sg-collapse-btn")) return;
+      if (t.closest(".sg-menu-btn, .sg-collapse-btn, .sg-pv-toggle")) return;
       const gres = t.closest(".sg-gresize");
       if (gres && !readOnly) {
         e.preventDefault();
@@ -1453,9 +1622,62 @@
       startGesture({ kind: "box", sx: e.clientX, sy: e.clientY, additive: e.shiftKey || e.ctrlKey || e.metaKey, base: new Set(e.shiftKey || e.ctrlKey || e.metaKey ? sel : []) });
     }
 
+    // ---------- touch: pinch zoom ----------
+    function trackTouch(e) {
+      const first = touches.size === 0;
+      touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (first) {
+        win.addEventListener("pointermove", onTouchMove);
+        win.addEventListener("pointerup", onTouchEnd);
+        win.addEventListener("pointercancel", onTouchEnd);
+      }
+    }
+    function untrackTouches() {
+      touches.clear();
+      win.removeEventListener("pointermove", onTouchMove);
+      win.removeEventListener("pointerup", onTouchEnd);
+      win.removeEventListener("pointercancel", onTouchEnd);
+    }
+    function touchPair() {
+      const pts = Array.from(touches.values()).slice(0, 2);
+      return { d: Math.max(1, Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y)), x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
+    }
+    function startPinch() {
+      if (gesture) {
+        // abandon an in-progress one-finger gesture without committing it
+        const old = endGesture();
+        if (old && old.kind === "port" && old.started) cancelPending(false);
+        scheduleRender();
+      }
+      const p = touchPair(), r = rect();
+      gesture = { kind: "pinch", started: true, d0: p.d, k0: view.k, wx: (p.x - r.left - view.x) / view.k, wy: (p.y - r.top - view.y) / view.k };
+      rootEl.classList.add("sg-panning");
+    }
+    function onTouchMove(e) {
+      if (!touches.has(e.pointerId)) return;
+      touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      const g = gesture;
+      if (!g || g.kind !== "pinch" || touches.size < 2) return;
+      const p = touchPair(), r = rect();
+      const k = clamp(g.k0 * p.d / g.d0, MIN_K, MAX_K);
+      setViewLocal({ x: p.x - r.left - g.wx * k, y: p.y - r.top - g.wy * k, k: k }, false);
+    }
+    function onTouchEnd(e) {
+      if (!touches.has(e.pointerId)) return;
+      touches.delete(e.pointerId);
+      if (gesture && gesture.kind === "pinch" && touches.size < 2) {
+        gesture = null;
+        rootEl.classList.remove("sg-panning");
+        pushView();
+        status("縮放 " + Math.round(view.k * 100) + "%。");
+      }
+      if (!touches.size) untrackTouches();
+    }
+
     function onGestureMove(e) {
       const g = gesture;
       if (!g) return;
+      if (g.kind === "pinch" || (g.pid != null && e.pointerId !== g.pid)) return;
       lastPointer = { cx: e.clientX, cy: e.clientY };
       const ddx = e.clientX - g.sx, ddy = e.clientY - g.sy;
       if (!g.started) {
@@ -1533,6 +1755,7 @@
     function onGestureUp(e) {
       const g = gesture;
       if (!g) return;
+      if (g.pid != null && e.pointerId !== g.pid) return;
       if (g.kind === "port" && g.started) { finishPortDrag(g, e); endGesture(); drawWires(); return; }
       endGesture();
       if (g.kind === "pan") { pushView(); return; }
@@ -1580,7 +1803,8 @@
       }
     }
 
-    function onGestureCancel() {
+    function onGestureCancel(e) {
+      if (e && e.pointerId != null && gesture && gesture.pid != null && e.pointerId !== gesture.pid) return;
       const g = endGesture();
       if (g && g.kind === "port" && g.started) cancelPending(false);
       scheduleRender();
@@ -1654,6 +1878,8 @@
         openMenu(nodeMenuItems(id), r.left, r.bottom + 2, mb, labels.menu);
         return;
       }
+      const pvt = t.closest(".sg-pv-toggle");
+      if (pvt) { togglePreview(pvt.closest(".sg-node").dataset.node); return; }
       const cb = t.closest(".sg-collapse-btn");
       if (cb) {
         const id = cb.closest(".sg-node").dataset.node;
@@ -1678,7 +1904,7 @@
 
     function onDblClick(e) {
       const t = e.target;
-      if (isEditable(t) || t.closest(".sg-menu, .sg-pop, .sg-minimap, .sg-preview, .sg-port")) return;
+      if (isEditable(t) || t.closest(".sg-menu, .sg-pop, .sg-minimap, .sg-preview, .sg-port, .sg-controls, .sg-empty button, .sg-pv-toggle")) return;
       const wire = t.closest("[data-link]");
       if (wire) { if (!readOnly) insertReroute(wire.dataset.link, toWorld(e.clientX, e.clientY)); return; }
       const gt = t.closest(".sg-gtitle");
@@ -1698,7 +1924,7 @@
       const t = e.target;
       if (isEditable(t) || t.closest(".sg-pop, .sg-preview")) return;
       e.preventDefault();
-      if (gesture) return;
+      if (gesture || t.closest(".sg-controls, .sg-minimap")) return;
       const wpt = toWorld(e.clientX, e.clientY);
       const port = t.closest(".sg-port");
       if (port) { openMenu(portMenuItems(port), e.clientX, e.clientY, port, "插槽選單"); return; }
@@ -1733,6 +1959,14 @@
       const mod = e.ctrlKey || e.metaKey;
       const key = e.key;
       if (isEditable(t)) return;
+      if (t.closest && t.closest(".sg-controls") && !mod && (key === "ArrowLeft" || key === "ArrowRight" || key === "Home" || key === "End")) {
+        e.preventDefault();
+        const list = Array.prototype.filter.call(controls.querySelectorAll("button"), function (b) { return !b.hidden; });
+        const i = list.indexOf(t);
+        const j = key === "Home" ? 0 : key === "End" ? list.length - 1 : (i + (key === "ArrowRight" ? 1 : -1) + list.length) % list.length;
+        if (list[j]) list[j].focus();
+        return;
+      }
       const inNode = t.closest && t.closest(".sg-node");
       const onButton = t.tagName === "BUTTON";
       if (key === " " && !onButton) {
@@ -1866,6 +2100,47 @@
     rootEl.addEventListener("dragleave", onDragLeave);
     rootEl.addEventListener("drop", onDrop);
     win.addEventListener("blur", onWinBlur);
+
+    // ---------- floating controls / minimap toggle ----------
+    function zoomStep(f) {
+      zoomTo(view.k * f);
+      status("縮放 " + Math.round(view.k * 100) + "%。");
+    }
+    zoomOutBtn.addEventListener("click", function () { if (view.k > MIN_K + 1e-6) zoomStep(1 / 1.2); });
+    zoomInBtn.addEventListener("click", function () { if (view.k < MAX_K - 1e-6) zoomStep(1.2); });
+    zoomBtn.addEventListener("click", function () { zoomTo(1); status("縮放 100%。"); });
+    fitBtn.addEventListener("click", function () { fit(); status("已縮放至符合畫面。"); });
+    mmBtn.addEventListener("click", function () {
+      setMinimap(!minimapOn, true);
+      status(minimapOn ? "已顯示小地圖。" : "已隱藏小地圖。");
+    });
+    emptyBtn.addEventListener("click", function () { openSearchWorld(); });
+
+    function readMinimapPref() {
+      try { const v = win.localStorage.getItem(MINIMAP_KEY); return v === "1" ? true : v === "0" ? false : null; }
+      catch (e) { return null; }
+    }
+    function setMinimap(on, byUser) {
+      on = !!on && !!minimap;
+      minimapOn = on;
+      if (minimap) minimap.setVisible(on);
+      mmBtn.setAttribute("aria-pressed", on ? "true" : "false");
+      if (byUser) {
+        minimapAuto = false;
+        try { win.localStorage.setItem(MINIMAP_KEY, on ? "1" : "0"); } catch (e) { /* storage unavailable */ }
+      }
+      emit("minimap", on);
+    }
+    function onResize() {
+      if (destroyed) return;
+      const w = rootEl.clientWidth;
+      if (minimapAuto && w > 0) {
+        const want = w >= MINIMAP_MIN_W;
+        if (want !== minimapOn) setMinimap(want, false);
+      }
+      emit("resize", { w: w, h: rootEl.clientHeight });
+    }
+
     const offChange = graph.on("change", function (ev) {
       slotsCache.clear();
       scheduleRender(!!ev && ev.reason === "view");
@@ -1877,7 +2152,12 @@
         if (!st || (st.status === "idle" && st.preview == null && !st.message)) states.delete(id);
         else states.set(id, Object.assign({}, st));
         const n = getNode(id), rec = nodeEls.get(id);
-        if (n && rec) applyState(n, rec);
+        if (n && rec) {
+          applyState(n, rec);
+          const h = rec.size.h;
+          measure(rec);
+          if (rec.size.h !== h) scheduleWires();
+        }
         emit("state", { id: id, state: st });
       },
       setLinkState: function (linkId, st) {
@@ -1908,6 +2188,9 @@
         destroyed = true;
         if (viewTimer) { clearTimeout(viewTimer); viewTimer = 0; try { graph.setView && graph.setView(getView()); } catch (e) { /* ignore */ } }
         unbindGesture();
+        untrackTouches();
+        if (resizeObs) { try { resizeObs.disconnect(); } catch (e) { /* ignore */ } resizeObs = null; }
+        win.removeEventListener("resize", onResize);
         closeMenu(false);
         if (searchPop && searchPop.close) searchPop.close();
         if (minimap && minimap.destroy) minimap.destroy();
@@ -1930,7 +2213,19 @@
       groupRects: function () { return groups().map(function (g) { return { id: g.id, x: g.x, y: g.y, w: g.w, h: g.h, color: g.color || GROUP_COLORS[0] }; }); },
       on: on,
       setSnap: function (n) { snap = Math.max(0, Number(n) || 0); },
-      redraw: function () { scheduleRender(); }
+      redraw: function () { scheduleRender(); },
+      // Minimap visibility (also driven by the 小地圖 button). setMinimap(on) persists the choice in
+      // localStorage "sea-agent-studio-v06.ui.minimap" like a user toggle; omit `on` to toggle.
+      setMinimap: function (on) { setMinimap(on == null ? !minimapOn : on, true); },
+      minimapVisible: function () { return minimapOn; },
+      // Screen-space rects (relative to the canvas) the app should avoid covering with its own overlays.
+      overlayRects: function () {
+        const r = rect();
+        return [controls, minimapOn && minimap ? minimap.el : null].filter(function (el) { return el && !el.hidden; }).map(function (el) {
+          const b = el.getBoundingClientRect();
+          return { x: b.left - r.left, y: b.top - r.top, w: b.width, h: b.height };
+        });
+      }
     };
 
     applyView();
@@ -1938,6 +2233,18 @@
     render();
     if (opts.minimap !== false && SG.Minimap && typeof SG.Minimap.mount === "function") {
       try { minimap = SG.Minimap.mount(api, rootEl); } catch (e) { minimap = null; }
+    }
+    if (!minimap) mmBtn.hidden = true;
+    else {
+      const pref = readMinimapPref();
+      if (pref != null) { minimapAuto = false; setMinimap(pref, false); }
+      else setMinimap((rootEl.clientWidth || 0) >= MINIMAP_MIN_W, false);
+    }
+    if (typeof win.ResizeObserver === "function") {
+      resizeObs = new win.ResizeObserver(function () { onResize(); });
+      resizeObs.observe(rootEl);
+    } else {
+      win.addEventListener("resize", onResize);
     }
     return api;
   }

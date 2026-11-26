@@ -25,7 +25,8 @@
   const st = {
     gen: 0, agent: null, graph: null, ex: null, canvas: null, offs: [],
     selection: [], saveTimer: 0, structKey: "", running: 0,
-    states: new Map(), skips: new Map(), replayTimers: [], picked: [], runsMem: new Map(), muteInspector: false
+    states: new Map(), skips: new Map(), replayTimers: [], picked: [], runsMem: new Map(), muteInspector: false,
+    collapsed: new Set(), progress: { done: 0, total: 0 }
   };
 
   // ---- small helpers ---------------------------------------------------------
@@ -78,9 +79,19 @@
     if (!st.graph || !st.agent) return;
     const json = snapshot();
     S.changes.set(st.agent, json);
-    storageSet(FLOW_KEY + st.agent, JSON.stringify(json));
+    const ok = storageSet(FLOW_KEY + st.agent, JSON.stringify(json));
+    showSaveState(ok ? "saved" : "failed");
   }
-  function scheduleSave() { clearTimeout(st.saveTimer); st.saveTimer = setTimeout(saveNow, 400); }
+  function scheduleSave() { clearTimeout(st.saveTimer); showSaveState("pending"); st.saveTimer = setTimeout(saveNow, 400); }
+  function clock(d) { const p = n => String(n).padStart(2, "0"); return p(d.getHours()) + ":" + p(d.getMinutes()); }
+  function showSaveState(kind) {
+    const el = $("save-state");
+    if (!el) return;
+    el.dataset.state = kind;
+    el.textContent = kind === "saved" ? "已自動儲存 · " + clock(new Date())
+      : kind === "pending" ? "儲存中…"
+      : kind === "failed" ? "無法儲存（可匯出 JSON）" : "";
+  }
   function structKey() {
     const g = st.graph;
     return JSON.stringify([g.nodes.map(n => [n.id, n.type, n.widgets, n.mode, n.converted, n.retry]), g.links.map(l => [l.from, l.out, l.to, l.in])]);
@@ -116,6 +127,7 @@
     st.structKey = structKey();
     $("preset").value = SG.migrate.presetFor(agentId);
     renderInspector(); renderLibrary(); renderReuse(); renderRunPanel(null); renderHistory(); updateRunButtons();
+    showSaveState(source === "v06" ? "saved" : ""); setProgress(0, 0);
     S.status({ v06: "就緒。流程編輯會自動儲存在這個瀏覽器。", v05: "已把 v0.5 流程轉成節點圖（原資料保留不動）。", preset: "已載入流程範例，編輯後自動儲存。", live: "就緒。" }[source]);
     if (source !== "v06") requestAnimationFrame(() => { if (gen === st.gen && st.canvas) st.canvas.fit(); });
   };
@@ -166,9 +178,11 @@
       st.states.clear(); st.skips.clear();
       st.canvas.clearStates();
       for (const id of (e && e.order) || []) setState(id, { status: "queued" }, true);
-      $("results").replaceChildren(make("p", "執行中…", "sub"));
+      st.progress = { done: 0, total: ((e && e.order) || []).length };
+      renderLiveResults();
       renderApprovals();
-      S.status("執行中…");
+      setProgress(0, st.progress.total);
+      S.status("執行中 0/" + st.progress.total);
     });
     on(ex, "node-start", e => { if (live()) setState(e.id, { status: "running", progress: 0, message: undefined }); });
     on(ex, "node-progress", e => { if (live()) setState(e.id, { status: "running", progress: e.value, message: e.text }); });
@@ -184,13 +198,14 @@
       S.showPanel("run-panel"); renderApprovals();
       S.status("等待核准：" + titleOf(nodeById(e.id)));
     });
-    on(ex, "node-done", e => { if (live()) { setState(e.id, { status: e.cached ? "cached" : "done", progress: 1, preview: previewText(e.outputs), message: undefined, approval: undefined }); renderApprovals(); } });
-    on(ex, "node-error", e => { if (live()) { setState(e.id, { status: "error", message: e.message, approval: undefined }); renderApprovals(); } });
+    on(ex, "node-done", e => { if (live()) { setState(e.id, { status: e.cached ? "cached" : "done", progress: 1, preview: previewText(e.outputs), message: undefined, approval: undefined }); renderApprovals(); tick(); } });
+    on(ex, "node-error", e => { if (live()) { setState(e.id, { status: "error", message: e.message, approval: undefined }); renderApprovals(); tick(); } });
     on(ex, "node-skip", e => {
       if (!live()) return;
       st.skips.set(e.id, e.reason);
       const message = e.reason === "branch" ? "branch" : e.reason === "mute" ? "已停用（mute）" : "前一步未通過";
       setState(e.id, { status: "skipped", message, approval: undefined });
+      tick();
       if (e.reason === "branch" && st.canvas.setLinkState)
         for (const l of st.graph.links) if (l.to === e.id || l.from === e.id) st.canvas.setLinkState(l.id, { inactive: true });
     });
@@ -198,7 +213,38 @@
   }
 
   // ---- running -------------------------------------------------------------------
-  function updateRunButtons() { $("cancel-run").disabled = !st.running; $("run").setAttribute("aria-busy", String(Boolean(st.running))); }
+  function updateRunButtons() {
+    const busy = Boolean(st.running), run = $("run"), cancel = $("cancel-run");
+    const hadFocus = doc.activeElement === run || doc.activeElement === cancel;
+    run.hidden = busy; cancel.hidden = !busy;
+    run.setAttribute("aria-busy", String(busy));
+    if (!busy) setProgress(0, 0);
+    if (hadFocus) (busy ? cancel : run).focus({ preventScroll: true });
+  }
+  function setProgress(done, total) {
+    const el = $("run-progress");
+    if (!el) return;
+    el.hidden = !total;
+    el.textContent = total ? "執行中 " + Math.min(done, total) + "/" + total : "";
+  }
+  /** One more node finished (done / error / skipped) during a run. */
+  function tick() {
+    if (!st.running) return;
+    st.progress.done++;
+    setProgress(st.progress.done, st.progress.total);
+    S.status("執行中 " + Math.min(st.progress.done, st.progress.total) + "/" + st.progress.total);
+    renderLiveResults();
+  }
+  function renderLiveResults() {
+    const area = $("results"), { done, total } = st.progress;
+    area.replaceChildren();
+    const box = make("div", null, "sga-live");
+    box.append(make("strong", "執行中 " + Math.min(done, total) + "/" + total));
+    const bar = make("div", null, "sga-bar-track"), fill = make("span");
+    fill.style.width = (total ? Math.round(Math.min(done, total) / total * 100) : 0) + "%";
+    bar.append(fill); box.append(bar);
+    area.append(box);
+  }
   function agentIds() {
     const ids = [st.agent];
     for (const n of st.graph.nodes) {
@@ -267,7 +313,7 @@
   }
   function finishRun(e) {
     const results = e.results || [];
-    renderResults(results);
+    renderResults(results, e.status);
     renderApprovals();
     $("run-queue").textContent = "";
     if (e.status === "cancelled") { S.status("已取消執行。"); return; }
@@ -277,25 +323,59 @@
     const cached = results.filter(r => r.status === "cached").length;
     S.status("預覽 " + ok + "/" + results.length + " 個節點完成" + (cached ? "（其中 " + cached + " 個為快取）" : "") + "。真實任務未執行。");
   }
-  function renderResults(results) {
+  const ICON = { done: "✓", cached: "↺", error: "✕", skipped: "–", waiting: "…", running: "…", queued: "…", idle: "·" };
+  function fmtMs(ms) { ms = Number(ms) || 0; return ms >= 1000 ? (ms / 1000).toFixed(1) + " 秒" : Math.round(ms) + " 毫秒"; }
+  function chip(text, cls) { return make("span", text, "sga-chip " + (cls || "")); }
+  function renderResults(results, runStatus) {
     const area = $("results"); area.replaceChildren();
     if (!results.length) { area.append(make("p", "尚無結果。", "sub")); return; }
-    for (const r of results) {
+    const c = { done: 0, cached: 0, error: 0, skipped: 0 };
+    let ms = 0;
+    for (const r of results) { if (c[r.status] !== undefined) c[r.status]++; ms += Number(r.ms) || 0; }
+    const head = make("div", null, "sga-sum");
+    const top = make("div", null, "sga-sum-top");
+    const overall = runStatus === "cancelled" ? "cancelled" : c.error ? "error" : "ok";
+    top.append(chip(RUN_LABEL[overall] || overall, "sga-chip-" + overall), make("span", "共 " + results.length + " 個節點" + (ms ? " · " + fmtMs(ms) : ""), "sub"));
+    const counts = make("div", null, "sga-sum-counts");
+    for (const [k, label] of [["done", "完成"], ["cached", "快取"], ["error", "錯誤"], ["skipped", "略過"]])
+      counts.append(chip(label + " " + c[k], "sga-count sga-count-" + k + (c[k] ? "" : " sga-zero")));
+    head.append(top, counts);
+    area.append(head);
+    const list = make("div", null, "sga-rows");
+    const rank = r => (r.status === "error" ? 0 : 1);
+    const sorted = results.map((r, i) => [r, i]).sort((x, y) => rank(x[0]) - rank(y[0]) || x[1] - y[1]).map(x => x[0]);
+    for (const r of sorted) {
       const n = nodeById(r.id);
       let label = STATUS_LABEL[r.status] || r.status, text = r.text || previewText(r.outputs);
       if (r.status === "skipped") [label, text] = skipText(r);
-      const row = make("div", null, "result sga-result sga-" + r.status);
-      const head = make("strong", label + " · " + titleOf(n || { type: r.id }));
-      row.append(head, make("div", text || ""));
-      const meta = [];
+      const item = make("div", null, "sga-row sga-row-" + r.status);
+      const btn = make("button", null, "sga-row-btn");
+      btn.type = "button"; btn.disabled = !n;
+      btn.title = n ? "在畫布上顯示此節點" : "此節點已不在畫布上";
+      const icon = make("span", ICON[r.status] || "·", "sga-ico"); icon.setAttribute("aria-hidden", "true");
+      const body = make("span", null, "sga-row-body");
+      body.append(make("span", titleOf(n || { type: r.id }), "sga-row-title"));
+      const meta = r.status === "done" ? [] : [label];
       if (r.attempts > 1) meta.push("嘗試 " + r.attempts + " 次");
       if (r.iterations != null) meta.push(r.iterations + " 輪");
       if (r.status === "cached") meta.push("沿用快取");
-      if (meta.length) row.append(make("div", meta.join(" · "), "sub"));
-      for (const s of sourcesOf(r.outputs)) { const d = make("div"); d.append(linkTo(s.url, s.title)); row.append(d); }
-      if (n) row.append(action("在畫布上顯示", () => showNode(r.id), "sga-mini"));
-      area.append(row);
+      if (meta.length) body.append(make("span", meta.join(" · "), "sga-row-meta"));
+      if (text && r.status !== "error") body.append(make("span", text, "sga-row-text"));
+      btn.append(icon, body);
+      if (r.ms) btn.append(make("span", fmtMs(r.ms), "sga-row-ms"));
+      btn.onclick = () => showNode(r.id);
+      item.append(btn);
+      if (r.status === "error" && text) item.append(make("p", text, "sga-row-err"));
+      const src = sourcesOf(r.outputs);
+      if (src.length) {
+        const d = make("details", null, "sga-src"), sum = make("summary", src.length + " 個來源");
+        d.append(sum);
+        for (const s of src) { const line = make("div"); line.append(linkTo(s.url, s.title)); d.append(line); }
+        item.append(d);
+      }
+      list.append(item);
     }
+    area.append(list);
   }
   function showNode(id) {
     if (!st.canvas) return;
@@ -404,19 +484,23 @@
     });
     if (!order.length) lib.append(make("p", "找不到符合的節點。", "sub"));
     for (const c of order) {
-      lib.append(make("div", c, "group"));
+      const box = make("details", null, "sga-cat");
+      box.open = Boolean(q) || !st.collapsed.has(c);
+      box.addEventListener("toggle", () => { if (q) return; if (box.open) st.collapsed.delete(c); else st.collapsed.add(c); });
       const list = groups.get(c);
+      box.append(make("summary", c + "（" + list.length + "）", "group"));
       if (c === "流程控制") list.sort((a, b) => CONTROL_TYPES.indexOf(a.type) - CONTROL_TYPES.indexOf(b.type));
       for (const d of list) {
         const label = d.type === "core/approval" ? "核准關卡" : d.title || d.type;
         const b = action("＋ " + label, () => addAtView(d.type), "part");
-        if (d.hint) b.append(make("small", d.hint));
+        if (d.hint) { b.append(make("small", d.hint)); b.title = label + "：" + d.hint; } else b.title = label;
         b.draggable = true; b.dataset.part = d.type;
-        b.setAttribute("aria-label", "加入 " + c + " " + label);
+        b.setAttribute("aria-label", "加入 " + c + " " + label + (d.hint ? "。" + d.hint : ""));
         b.ondragstart = e => { e.dataTransfer.setData(MIME, d.type); e.dataTransfer.effectAllowed = "copy"; requestAnimationFrame(() => $("library").classList.add("drop-through")); };
         b.ondragend = () => $("library").classList.remove("drop-through");
-        lib.append(b);
+        box.append(b);
       }
+      lib.append(box);
     }
   }
   function renderReuse() {
@@ -630,6 +714,18 @@
     if (S.getPanel() === "history") renderHistory();
   }
   function timeText(at) { try { return new Date(at).toLocaleString("zh-TW", { hour12: false }); } catch (e) { return String(at); } }
+  function relTime(at) {
+    const t = new Date(at).getTime();
+    if (!Number.isFinite(t)) return String(at);
+    const sec = Math.max(0, Math.round((Date.now() - t) / 1000));
+    if (sec < 45) return "剛剛";
+    if (sec < 3600) return Math.max(1, Math.round(sec / 60)) + " 分鐘前";
+    if (sec < 86400) return Math.round(sec / 3600) + " 小時前";
+    if (sec < 86400 * 7) return Math.round(sec / 86400) + " 天前";
+    return timeText(at);
+  }
+  /** Rows are built once per render; checking a run only syncs the picks and diff
+   *  in place (no re-render), so the second pick always lands on a live checkbox. */
   function renderHistory() {
     const area = $("history-list"); area.replaceChildren();
     if (!st.agent) return;
@@ -638,21 +734,38 @@
     if (!list.length) area.append(make("p", "還沒有執行紀錄。按「▷ 執行」後會記錄在這裡。", "sub"));
     for (const e of list) {
       const c = SG.runs.counts(e);
-      const row = make("div", null, "sga-run" + (st.picked.includes(e.id) ? " sga-picked" : ""));
+      const row = make("div", null, "sga-run");
+      row.dataset.id = e.id;
       const lab = make("label", null, "sga-run-pick"), box = make("input");
-      box.type = "checkbox"; box.checked = st.picked.includes(e.id);
-      box.onchange = () => {
-        st.picked = box.checked ? st.picked.concat(e.id).slice(-2) : st.picked.filter(x => x !== e.id);
-        renderHistory();
-      };
-      lab.append(box, make("span", timeText(e.at) + " · " + (RUN_LABEL[e.status] || e.status)));
+      box.type = "checkbox"; box.dataset.id = e.id; box.checked = st.picked.includes(e.id);
+      const when = make("span", relTime(e.at), "sga-run-when");
+      when.title = timeText(e.at);
+      lab.append(box, when, chip(RUN_LABEL[e.status] || e.status, "sga-chip-" + e.status));
       row.append(lab, make("div", "完成 " + c.done + " · 快取 " + c.cached + " · 錯誤 " + c.error + (c.skipped ? " · 略過 " + c.skipped : ""), "sub"));
       const acts = make("div", null, "actions");
-      acts.append(action("重播", () => replay(e), "sga-mini"), action("還原此版本", () => restoreRun(e), "sga-mini"));
+      const restore = action("還原", () => restoreRun(e), "sga-mini");
+      restore.title = "還原此版本的流程";
+      acts.append(action("重播", () => replay(e), "sga-mini"), restore);
       row.append(acts);
       area.append(row);
     }
-    renderDiff(list);
+    syncPicks(list);
+  }
+  function syncPicks(list) {
+    for (const row of $("history-list").querySelectorAll(".sga-run")) {
+      const on = st.picked.includes(row.dataset.id);
+      row.classList.toggle("sga-picked", on);
+      const box = row.querySelector("input"); if (box) box.checked = on;
+    }
+    renderDiff(list || loadRuns());
+  }
+  function onPick(e) {
+    const box = e.target;
+    if (!box || box.type !== "checkbox" || !box.dataset.id) return;
+    const id = box.dataset.id;
+    st.picked = box.checked ? st.picked.filter(x => x !== id).concat(id).slice(-2) : st.picked.filter(x => x !== id);
+    syncPicks();
+    if (st.picked.length === 2) S.status("已選兩筆紀錄，顯示差異。");
   }
   const CHANGE_LABEL = { added: "新增", removed: "移除", changed: "變更", same: "相同" };
   function renderDiff(list) {
@@ -747,6 +860,10 @@
   function bind() {
     const host = $("flow-host");
     $("run").onclick = () => runQueue();
+    $("history-list").addEventListener("change", onPick);
+    $("opt-props").onclick = () => { if (!$("props-toggle").disabled) { S.showPanel("inspector"); renderInspector(); focusFirst($("props")); } else S.status("請先在畫布上選取一個節點。"); };
+    $("opt-history").onclick = () => { S.showPanel("history"); renderHistory(); };
+    $("opt-estimate").onclick = showEstimate;
     $("cancel-run").onclick = () => { if (st.ex && st.running) { st.ex.cancel(); S.status("正在取消…"); } };
     $("estimate").onclick = showEstimate;
     $("load").onclick = loadPreset;
@@ -755,9 +872,19 @@
     $("flow-file").onchange = e => { const f = e.target.files[0]; e.target.value = ""; importFile(f); };
     $("fit-view").onclick = () => { if (st.canvas) { S.showPanel(null); st.canvas.fit(); App.focusCanvas(); } };
     $("palette-filter").oninput = renderLibrary;
-    $("library-toggle").addEventListener("click", () => { if (st.graph) { sync(); renderLibrary(); renderReuse(); } });
+    $("library-toggle").addEventListener("click", () => {
+      if (!st.graph) return;
+      sync(); renderLibrary(); renderReuse();
+      if (S.getPanel() === "library") $("palette-filter").focus({ preventScroll: true });
+    });
     $("props-toggle").addEventListener("click", () => renderInspector());
     $("history-toggle").addEventListener("click", () => renderHistory());
+    doc.addEventListener("keydown", e => {
+      if (e.key !== "?" || e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey || $("editor").hidden) return;
+      const t = e.target, tag = t && t.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (t && t.isContentEditable)) return;
+      e.preventDefault(); $("shortcuts").click();
+    });
     $("shortcuts").onclick = () => { const d = $("shortcut-help"); if (d.showModal) { if (!d.open) d.showModal(); } else d.setAttribute("open", ""); };
     // Palette drops (MIME) are handled by the canvas and reach us via onDropType;
     // .json file drops are caught here before the canvas sees them.
