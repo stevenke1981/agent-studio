@@ -129,3 +129,29 @@ Migration map: old edge `[a,b]` → link from a's first output to b's first inpu
 
 ## Merge order & risks
 Merge A → B → C; C last, run all tests. Contract changes go through the lead only. Slot names are link keys. Only `g.batch`/`history.commit` create undo entries. Locate HTML code by function name, not line number.
+
+## Amendment 1 — approval gate + run history (now in scope)
+```js
+// A (engine)
+// registry def may set nocache:true (never cached, always re-executed).
+// ctx.requestApproval({message, details?}) -> Promise<boolean>; resolves on ex.approve; rejects (AbortError) on cancel.
+ex.approve(nodeId, approved:boolean, note?:string)
+ex.pending() -> [{id, message, details}]
+// new event "node-wait" {id, message, details}; dryRun never waits.
+// core/approval node: input "value" "*", output "value" "*" (effective type = upstream type, like reroute),
+//   widgets: message (textarea, default "請確認是否繼續"), auto (toggle, default false = auto-approve).
+//   nocache:true. Rejected -> node-error "已拒絕" + (note ? "：" + note : "") -> downstream skip "upstream".
+// RunResult adds: order:string[], snapshot:<workflow JSON at run start>, results[i].key (cache key), results[i].ms.
+// B (canvas)
+// setNodeState status adds "waiting" (amber pulse); state may carry approval:{message}
+//   -> node renders inline 核准 / 拒絕 buttons calling opts.onApprove(id, approved).
+// C (app) — new DOM-free file comfy/runs.js, loaded after migrate.js:
+SG.runs.record(runResult, {agent, at:ISOString}) -> entry {id, agent, at, status, snapshot, order, results}
+SG.runs.diff(entryA, entryB) -> [{id, title, change:"added"|"removed"|"changed"|"same",
+                                   statusBefore, statusAfter, textBefore, textAfter, widgetsChanged:[names]}]
+// App: localStorage "sea-agent-studio-v06.runs.<agentId>", cap 20 newest.
+// 「執行紀錄」drawer: list runs; pick two -> diff view; 「重播」 replays stored states onto canvas step by step
+// (no execution); 「還原此版本」 loads snapshot into graph (confirm, one history entry).
+// Run panel lists pending approvals with 核准/拒絕 + note input; also bridges canvas onApprove -> ex.approve.
+```
+Tests: engine.test covers approve / reject / cancel-while-waiting / auto; nodes.test covers runs.record + runs.diff.
