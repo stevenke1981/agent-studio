@@ -26,7 +26,9 @@
 | Agent 即節點 | `agent/<id>`、`skill/<id>`、`tool/<id>` 依實際目錄註冊；Agent 節點以巢狀執行器跑該 Agent 的流程（有界遞迴） |
 | 權限感知 | 工具節點顯示讀／寫標記；寫入操作連到只有讀權限的 Agent 時報錯 |
 | 執行紀錄 | 每個 Agent 保留最新 20 筆；任選兩筆比對差異、逐步重播、還原該版本 |
-| 畫布 | 平移縮放、框選、小地圖、搜尋彈窗、點擊式連線（鍵盤可用）、節點狀態環與進度、行內預覽 |
+| 畫布 | 平移縮放（含觸控雙指縮放）、框選、可切換小地圖、左下角縮放／適合畫布控制列、搜尋彈窗、點擊式連線（鍵盤可用）、節點狀態環與進度、可展開的行內預覽、空畫布引導 |
+| 編輯器 | 依重要性分組的工具列（執行／取消同一顆按鈕）、窄螢幕單列工具列與「⋯」選單、執行結果摘要與精簡列（點列即定位節點）、自動儲存與執行進度狀態列 |
+| 首頁 | 每個 Agent 可直接「流程 →」，並顯示節點數與上次執行結果 |
 
 ### 常用快捷鍵
 
@@ -40,7 +42,8 @@
 | `Ctrl+B` / `Ctrl+M` | bypass／mute |
 | `Ctrl+G` | 建立群組 |
 | 空白鍵拖曳、方向鍵、滾輪、`+` / `-` | 平移與縮放 |
-| `Esc` | 取消連線中的操作 |
+| `Esc` | 取消連線中的操作或關閉抽屜 |
+| `?` | 開啟快捷鍵說明 |
 
 ## 專案結構
 
@@ -96,6 +99,7 @@ grep -rnE "fetch\(|XMLHttpRequest" comfy/*.js              # 應無輸出
 
 - `sea-agent-studio-v06.flow.<agentId>`：流程（workflow JSON）
 - `sea-agent-studio-v06.runs.<agentId>`：執行紀錄（最新 20 筆）
+- `sea-agent-studio-v06.ui.minimap`：小地圖顯示偏好
 - `sea-agent-studio-v02.<agentId>`：舊版資料，只在遷移時讀取，不再寫入
 
 Workflow JSON 格式（`schema: "sea-agent-studio/workflow"`, `version: 1`）詳見 `docs/comfy-plan.md`。
